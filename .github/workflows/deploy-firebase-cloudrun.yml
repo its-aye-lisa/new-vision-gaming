@@ -1,0 +1,161 @@
+# =============================================================================
+# One-Click Deploy to Google Cloud Run + Firebase Hosting + Firestore Rules
+# =============================================================================
+# Usage: GitHub -> Actions -> "Deploy to Firebase & Cloud Run" -> "Run workflow"
+#
+# Required Repository Variable (Settings -> Secrets and variables -> Actions -> Variables):
+#   - FIREBASE_PROJECT_ID   (your GCP / Firebase Project ID, e.g. new-vision-gaming-prod)
+#   - ADSENSE_CLIENT_ID     (optional, e.g. ca-pub-1234567890123456)
+#
+# Required Authentication Secret (either keyless OIDC WIF OR JSON key):
+#   Option A (Recommended Keyless OIDC):
+#     - vars.GCP_WIF_PROVIDER + vars.GCP_WIF_SERVICE_ACCOUNT
+#   Option B (Quickstart JSON Key — created automatically by scripts/bootstrap-firebase-github.sh):
+#     - secrets.GCP_SA_KEY
+# =============================================================================
+name: Deploy to Firebase & Cloud Run (1-Click)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target deployment environment"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+      ads_enabled:
+        description: "Enable Google AdSense Nonce Strict CSP on Web/PWA"
+        required: true
+        default: false
+        type: boolean
+      run_full_factory:
+        description: "Run full 9-Gate Verifiable Software Factory & Admission before deploying"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  verify-and-deploy:
+    name: Verify (9-Gate Factory) & Deploy to Cloud Run + Firebase Hosting
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout New Vision Gaming
+        uses: actions/checkout@v4
+
+      - name: Checkout Decoupled Verifiable Software Factory
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/verifiable-software-factory
+          path: _factory
+
+      - name: Set up Go 1.24.3
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.3'
+          cache: false
+
+      - name: Run Fast Preflight & Offline Mobile WASM Portability Check
+        run: FACTORY_DIR=_factory make fast-check
+
+      - name: Run Full 9-Gate Verifiable Software Factory & Gatekeeper Admission
+        if: ${{ inputs.run_full_factory }}
+        run: |
+          FACTORY_DIR=_factory make factory
+          FACTORY_DIR=_factory make admit
+
+      - name: Validate Required Project Configuration
+        id: cfg
+        run: |
+          PROJECT_ID="${{ vars.FIREBASE_PROJECT_ID }}"
+          if [ -z "$PROJECT_ID" ]; then
+            echo "::error::Missing repository variable FIREBASE_PROJECT_ID. Run scripts/bootstrap-firebase-github.sh or set Settings -> Variables -> FIREBASE_PROJECT_ID."
+            exit 1
+          fi
+          echo "project_id=${PROJECT_ID}" >> "$GITHUB_OUTPUT"
+          echo "region=${{ vars.GCP_REGION || 'us-central1' }}" >> "$GITHUB_OUTPUT"
+          echo "adsense_client=${{ vars.ADSENSE_CLIENT_ID || 'ca-pub-0000000000000000' }}" >> "$GITHUB_OUTPUT"
+
+      - name: Authenticate to Google Cloud (Keyless OIDC WIF or Service Account Key)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_WIF_SERVICE_ACCOUNT }}
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK (gcloud)
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy Verified nvg-arcade Container to Google Cloud Run (FIPS 140-3)
+        id: deploy_run
+        run: |
+          gcloud run deploy nvg-arcade \
+            --project "${{ steps.cfg.outputs.project_id }}" \
+            --region "${{ steps.cfg.outputs.region }}" \
+            --source . \
+            --allow-unauthenticated \
+            --min-instances 0 \
+            --max-instances 5 \
+            --memory 256Mi \
+            --cpu 1 \
+            --set-env-vars "GODEBUG=fips140=on,ADS_ENABLED=${{ inputs.ads_enabled }},ADSENSE_CLIENT_ID=${{ steps.cfg.outputs.adsense_client }}"
+          RUN_URL=$(gcloud run services describe nvg-arcade \
+            --project "${{ steps.cfg.outputs.project_id }}" \
+            --region "${{ steps.cfg.outputs.region }}" \
+            --format='value(status.url)')
+          echo "url=${RUN_URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy Firebase Hosting Rewrites & Fail-Closed Firestore Rules
+        run: |
+          npm install -g firebase-tools@latest
+          cat > firebase/.firebaserc <<EOF
+          {
+            "projects": {
+              "default": "${{ steps.cfg.outputs.project_id }}"
+            }
+          }
+          EOF
+          PUB_ID=$(echo "${{ steps.cfg.outputs.adsense_client }}" | sed 's/^ca-//')
+          echo "google.com, ${PUB_ID}, DIRECT, f08c47fec0942fa0" > firebase/public/ads.txt
+          echo "google.com, ${PUB_ID}, DIRECT, f08c47fec0942fa0" > firebase/public/app-ads.txt
+          firebase deploy \
+            --project "${{ steps.cfg.outputs.project_id }}" \
+            --config firebase/firebase.json \
+            --only hosting,firestore:rules \
+            --non-interactive
+
+      - name: Post-Deploy Live HTTPS Verification & Job Summary
+        run: |
+          SITE_URL="https://${{ steps.cfg.outputs.project_id }}.web.app"
+          echo "Verifying live deployment at ${SITE_URL}..."
+          HEALTH=$(curl -fsS "${SITE_URL}/health")
+          echo "Health response: ${HEALTH}"
+          curl -fsS -o /dev/null "${SITE_URL}/games/mexican-train"
+          curl -fsS -o /dev/null "${SITE_URL}/games/tictactoe"
+          curl -fsS -o /dev/null "${SITE_URL}/manifest.webmanifest"
+          curl -fsS -o /dev/null "${SITE_URL}/ads.txt"
+
+          {
+            echo "## New Vision Gaming — Live Deployment Verified!"
+            echo ""
+            echo "- **Live Web/PWA URL:** ${SITE_URL}"
+            echo "- **Mexican Train Dominoes:** ${SITE_URL}/games/mexican-train"
+            echo "- **Tic-Tac-Toe:** ${SITE_URL}/games/tictactoe"
+            echo "- **Cloud Run Service:** ${{ steps.deploy_run.outputs.url }}"
+            echo "- **Environment:** \`${{ inputs.environment }}\` | **ADS_ENABLED:** \`${{ inputs.ads_enabled }}\`"
+            echo ""
+            echo '```json'
+            echo "${HEALTH}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

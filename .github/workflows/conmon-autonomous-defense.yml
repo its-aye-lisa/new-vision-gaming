@@ -36,7 +36,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.24.3'
-          cache: true
+          cache: false
 
       - name: Reachability-Aware Vulnerability Scan (govulncheck)
         id: vuln
@@ -50,8 +50,8 @@ jobs:
         continue-on-error: true
         run: |
           make -C _factory build
-          FACTORY_BIN=_factory/bin/factory make factory
-          FACTORY_BIN=_factory/bin/factory make simulate-attacks
+          FACTORY_DIR=_factory make factory
+          FACTORY_DIR=_factory make simulate-attacks
 
       - name: Open Autonomous POA&M Issue if Drift or Control Regression Detected
         if: steps.vuln.outcome == 'failure' || steps.redteam.outcome == 'failure'

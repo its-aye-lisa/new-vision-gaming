@@ -42,14 +42,15 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.24.3'
+          cache: false
 
       - name: Run Full 9-Gate Verifiable Software Factory Pipeline
         run: |
           make -C _factory build
-          FACTORY_BIN=_factory/bin/factory make factory
+          FACTORY_DIR=_factory make factory
 
       - name: Verify Zero-Trust Admission Gatekeeper (9/9 Controls)
-        run: FACTORY_BIN=_factory/bin/factory make admit
+        run: FACTORY_DIR=_factory make admit
 
       - name: OPA Policy-as-Code Gate on FedRAMP/IL4 Evidence
         run: |
@@ -126,9 +127,9 @@ jobs:
         id: meta
         run: echo "image_tag=${IMAGE_NAME}:sha-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
 
-      - name: Build Hardened Scratch OCI Image (DISA Container STIG)
+      - name: Build Hardened Scratch OCI Image (DISA Container STIG + SI-7 Self-Attestation)
         run: |
-          docker build -t "${{ steps.meta.outputs.image_tag }}" .
+          docker build -f Dockerfile.attested -t "${{ steps.meta.outputs.image_tag }}" .
 
       - name: Anchore Syft — Generate Container Image CycloneDX 1.5 SBOM
         uses: anchore/sbom-action@v0

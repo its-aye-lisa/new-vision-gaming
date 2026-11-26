@@ -1,0 +1,28 @@
+{
+  "name": "nvg-arcade",
+  "description": "New Vision Gaming — Classic Games Suite (Mexican Train Dominoes & Tic-Tac-Toe) on Go 1.24 FIPS 140-3 + GoTH + PWA",
+  "env": {
+    "GODEBUG": {
+      "description": "Enforce Go 1.24 native FIPS 140-3 cryptographic module",
+      "value": "fips140=on",
+      "required": true
+    },
+    "ADS_ENABLED": {
+      "description": "Set to true once approved by Google AdSense to activate CSPRNG Nonce Strict CSP ad slots",
+      "value": "false",
+      "required": false
+    },
+    "ADSENSE_CLIENT_ID": {
+      "description": "Your Google AdSense publisher ID (ca-pub-XXXXXXXXXXXXXXXX)",
+      "value": "ca-pub-0000000000000000",
+      "required": false
+    }
+  },
+  "options": {
+    "allow-unauthenticated": true,
+    "memory": "256Mi",
+    "cpu": "1",
+    "port": 8080,
+    "http2": true
+  }
+}

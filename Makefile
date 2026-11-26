@@ -1,7 +1,7 @@
 .PHONY: fast-check check-wasm build-css factory dast admit simulate-attacks test serve serve-ads clean
 
 FACTORY_DIR ?= ../verifiable-software-factory
-FACTORY_BIN := $(FACTORY_DIR)/bin/factory
+FACTORY_BIN ?= $(FACTORY_DIR)/bin/factory
 
 $(FACTORY_BIN):
 	@$(MAKE) -C $(FACTORY_DIR) build
