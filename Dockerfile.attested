@@ -12,9 +12,9 @@ LABEL org.opencontainers.image.title="nvg-arcade" \
       gov.aegis.crypto.fips140="v1.0.0" \
       gov.aegis.memory_safety="go-no-unsafe-no-cgo"
 
-COPY --chmod=0555 dist/nvg-arcade /nvg-arcade
-COPY --chmod=0444 dist/release-bundle.signed.json /etc/nvg/release-bundle.signed.json
-COPY --chmod=0444 .factory-state/keys/trust-roots.json /etc/nvg/trust-roots.json
+COPY --chown=65532:65532 --chmod=0555 dist/nvg-arcade /nvg-arcade
+COPY --chown=65532:65532 --chmod=0444 dist/release-bundle.signed.json /release-bundle.signed.json
+COPY --chown=65532:65532 --chmod=0444 .factory-state/keys/trust-roots.json /trust-roots.json
 
 ENV GODEBUG="fips140=on" \
     PORT="8080" \
@@ -24,4 +24,4 @@ USER 65532:65532
 EXPOSE 8080
 
 ENTRYPOINT ["/nvg-arcade"]
-CMD ["--require-fips", "--bundle", "/etc/nvg/release-bundle.signed.json", "--trust-roots", "/etc/nvg/trust-roots.json"]
+CMD ["--require-fips", "--bundle", "/release-bundle.signed.json", "--trust-roots", "/trust-roots.json"]
