@@ -5,7 +5,7 @@
 # Builds directly from a clean git checkout (1-Click "Run on Google Cloud" &
 # `gcloud run deploy --source .`). For SI-7 signed-bundle startup attestation
 # in the 9-gate Release Software Factory, see Dockerfile.attested.
-FROM golang:1.27.3-bookworm AS builder
+FROM golang:1.27.4-bookworm AS builder
 
 WORKDIR /src
 COPY go.mod ./

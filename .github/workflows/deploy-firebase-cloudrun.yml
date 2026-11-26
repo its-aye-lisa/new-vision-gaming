@@ -60,10 +60,10 @@ jobs:
           repository: ${{ github.repository_owner }}/verifiable-software-factory
           path: _factory
 
-      - name: Set up Go 1.27.3
+      - name: Set up Go 1.27.4
         uses: actions/setup-go@v5
         with:
-          go-version: '1.27.3'
+          go-version: '1.27.4'
           cache: false
 
       - name: Run Fast Preflight & Offline Mobile WASM Portability Check
