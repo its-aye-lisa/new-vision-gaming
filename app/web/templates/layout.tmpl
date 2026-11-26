@@ -1,0 +1,124 @@
+{{define "layout.tmpl"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#090f1c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="New Vision Gaming — Instant-load, memory-safe, zero-bloat classic games suite on Firebase." />
+  <meta name="htmx-config" content='{"includeIndicatorStyles":false,"allowEval":false,"allowScriptTags":false,"selfRequestsOnly":true}' />
+  <title>{{.PageTitle}} — New Vision Gaming</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/static/tailwind.css" />
+  <script src="/static/htmx.min.js" defer></script>
+  {{if .WebAdsEnabled}}
+  <script async nonce="{{.CSPNonce}}" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{.AdSenseClient}}" crossorigin="anonymous"></script>
+  {{end}}
+</head>
+<body data-nvg-shell="{{.ClientShell}}" class="min-h-screen bg-surface-canvas text-ink-primary font-sans antialiased flex flex-col">
+  <!-- Top Navigation -->
+  <nav class="w-full border-b border-border-subtle bg-surface-card/80 backdrop-blur px-4 py-3 pt-safe px-safe">
+    <div class="max-w-5xl mx-auto flex items-center justify-between gap-4 flex-wrap">
+      <a href="/" class="flex items-center gap-2 font-bold text-lg tracking-tight text-ink-primary">
+        <span class="inline-block w-2.5 h-2.5 rounded-full bg-accent-primary"></span>
+        New Vision Gaming
+      </a>
+      <div class="flex items-center gap-4 text-xs font-semibold text-ink-muted">
+        <a href="/" class="hover:text-accent-primary">Arcade Lobby</a>
+        <a href="/games/mexican-train" class="hover:text-accent-primary text-ink-primary">Mexican Train</a>
+        <a href="/games/tictactoe" class="hover:text-accent-primary">Tic-Tac-Toe</a>
+        <a href="/privacy" class="hover:text-accent-primary">Privacy &amp; Ads</a>
+        <span class="px-2 py-0.5 rounded-full bg-status-verified/15 text-status-verified border border-status-verified/35">
+          {{if .FIPS140Enabled}}FIPS 140-3{{else}}DEV{{end}}
+        </span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Reserved Zero-CLS Top Leaderboard Ad Slot (Web AdSense on web/pwa; Native AdMob bridge on native-ios/android) -->
+  {{if not .IsNativeShell}}
+  <aside aria-label="Advertisement Top Banner" class="w-full max-w-5xl mx-auto px-4 pt-4">
+    <div id="nvg-top-leaderboard" data-nvg-ad-slot="top-leaderboard" class="w-full min-h-[90px] rounded-control border border-dashed border-border-subtle bg-surface-card/40 flex items-center justify-center text-xs font-mono text-ink-muted">
+      {{if .WebAdsEnabled}}
+        <ins class="adsbygoogle block w-full min-h-[90px]" data-ad-client="{{.AdSenseClient}}" data-ad-slot="top-leaderboard" data-ad-format="horizontal" data-full-width-responsive="true"></ins>
+      {{else}}
+        AD SLOT: Top Leaderboard (728&times;90 Zero-CLS SafeFrame &bull; Set ADS_ENABLED=true)
+      {{end}}
+    </div>
+  </aside>
+  {{end}}
+
+  <!-- Main Content + Desktop Ad Rail -->
+  <div class="flex-1 w-full max-w-5xl mx-auto px-4 py-6 px-safe grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
+    <main class="bg-surface-card border border-border-subtle rounded-card p-6 shadow-2xl">
+      {{if eq .View "arcade"}}
+        {{template "arcade.tmpl" .}}
+      {{else if eq .View "mexican-train"}}
+        {{template "mexicantrain.tmpl" .}}
+      {{else if eq .View "privacy"}}
+        {{template "privacy.tmpl" .}}
+      {{else}}
+        <header class="text-center mb-5">
+          <div class="flex items-center justify-center gap-2 mb-2 flex-wrap">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent-primary/15 text-accent-primary border border-accent-primary/35">
+              {{if .SelfVerified}}CLEAN-ROOM VERIFIED{{else}}SPEC-DRIVEN KERNEL{{end}}
+            </span>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-surface-cell text-ink-muted border border-border-subtle">
+              A2A v1.0 + A2UI v1.0
+            </span>
+          </div>
+          <h1 class="text-2xl font-bold tracking-tight text-ink-primary">Classic Tic-Tac-Toe</h1>
+          <p class="text-xs text-ink-muted mt-1">Instant-Load Go + HTMX &bull; Zero-CLS Ad-Optimized &bull; 100% Provably Fair</p>
+        </header>
+        <section id="game-surface" aria-live="polite">
+          {{template "board.tmpl" .}}
+        </section>
+      {{end}}
+    </main>
+
+    <!-- Reserved Zero-CLS Desktop Right-Rail Ad Slot (300x250 Medium Rectangle) -->
+    <aside aria-label="Advertisement Sidebar" class="space-y-4">
+      {{if not .IsNativeShell}}
+      <div id="nvg-sidebar-rect" data-nvg-ad-slot="sidebar-rect" class="w-full min-h-[250px] rounded-card border border-dashed border-border-subtle bg-surface-card/40 flex items-center justify-center p-4 text-center text-xs font-mono text-ink-muted">
+        {{if .WebAdsEnabled}}
+          <ins class="adsbygoogle block w-[300px] min-h-[250px]" data-ad-client="{{.AdSenseClient}}" data-ad-slot="sidebar-rect" data-ad-format="rectangle"></ins>
+        {{else}}
+          AD SLOT: Medium Rectangle<br/>(300&times;250 High-RPM Zero-CLS SafeFrame)
+        {{end}}
+      </div>
+      {{end}}
+      <div class="rounded-card border border-border-subtle bg-surface-card p-4 text-xs text-ink-muted space-y-1.5">
+        <div class="font-bold text-ink-primary uppercase tracking-wider">Classic Games Suite</div>
+        <div>&bull; <a href="/games/mexican-train" class="text-status-verified font-semibold underline">Mexican Train Dominoes (Live)</a></div>
+        <div>&bull; <a href="/games/tictactoe" class="text-accent-primary underline">Tic-Tac-Toe (Live)</a></div>
+        <div>&bull; Chickenfoot &amp; All-Fives (Phase 2)</div>
+        <div>&bull; Classic Backgammon (Phase 2)</div>
+        <div>&bull; Gin Rummy &amp; Cribbage (Phase 3)</div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Footer -->
+  <footer class="w-full border-t border-border-subtle px-4 py-5 pb-safe text-center text-xs font-mono text-ink-muted space-y-1.5">
+    <div class="flex items-center justify-center gap-3 flex-wrap">
+      <a href="/privacy" class="underline hover:text-accent-primary">Privacy Policy</a>
+      <span>&bull;</span>
+      <a href="/ads.txt" class="underline hover:text-accent-primary">ads.txt</a>
+      <span>&bull;</span>
+      <a href="/app-ads.txt" class="underline hover:text-accent-primary">app-ads.txt</a>
+      <span>&bull;</span>
+      <a href="/manifest.webmanifest" class="underline hover:text-accent-primary">PWA Manifest</a>
+      <span>&bull;</span>
+      <a href="/.well-known/agent-card.json" class="underline hover:text-accent-primary">A2A v1.0 Agent Card</a>
+      <span>&bull;</span>
+      <a href="/api/a2ui/surface" class="underline hover:text-accent-primary">A2UI v1.0 Surface</a>
+      <span>&bull;</span>
+      <a href="/health" class="underline hover:text-accent-primary">Health</a>
+    </div>
+    <div>&copy; 2026 New Vision Gaming &bull; Binary SHA-256: {{.ShortDigest}}</div>
+  </footer>
+</body>
+</html>
+{{end}}

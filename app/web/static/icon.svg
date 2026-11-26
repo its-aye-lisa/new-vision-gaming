@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="New Vision Gaming">
+  <rect width="512" height="512" rx="112" fill="#090f1c"/>
+  <rect x="36" y="36" width="440" height="440" rx="84" fill="#111a2e" stroke="#243452" stroke-width="10"/>
+  <g stroke="#38bdf8" stroke-width="26" stroke-linecap="round">
+    <line x1="138" y1="138" x2="226" y2="226"/>
+    <line x1="226" y1="138" x2="138" y2="226"/>
+  </g>
+  <circle cx="332" cy="182" r="46" fill="none" stroke="#f59e0b" stroke-width="26"/>
+  <rect x="128" y="284" width="256" height="106" rx="22" fill="#0d1526" stroke="#38bdf8" stroke-width="12"/>
+  <line x1="256" y1="296" x2="256" y2="378" stroke="#243452" stroke-width="10"/>
+  <circle cx="172" cy="318" r="11" fill="#e8eef8"/>
+  <circle cx="212" cy="356" r="11" fill="#e8eef8"/>
+  <circle cx="298" cy="318" r="11" fill="#f59e0b"/>
+  <circle cx="340" cy="318" r="11" fill="#f59e0b"/>
+  <circle cx="298" cy="356" r="11" fill="#f59e0b"/>
+  <circle cx="340" cy="356" r="11" fill="#f59e0b"/>
+</svg>

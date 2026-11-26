@@ -1,0 +1,116 @@
+{
+  "specVersion": "1.0.0",
+  "game": "mexican-train",
+  "title": "Mexican Train Dominoes (Double-9 & Double-12)",
+  "description": "Deterministic, pure, zero-import, WASM-portable Mexican Train Dominoes kernel supporting Double-9 (55 tiles, 10 hands) and Double-12 (91 tiles, 13 hands), 2-player invite rooms (/play/MEX-XXXX), and deterministic bot play.",
+  "variants": [
+    { "id": "double-9", "maxPip": 9, "totalTiles": 55, "hands": 10, "twoPlayerHandSize": 12 },
+    { "id": "double-12", "maxPip": 12, "totalTiles": 91, "hands": 13, "twoPlayerHandSize": 15 }
+  ],
+  "invariants": [
+    {
+      "id": "MT-INV-1",
+      "name": "Tile Conservation & Uniqueness",
+      "rule": "Across the center engine (1), all trains, all player hands, and the boneyard, every domino (a,b) with 0 <= a <= b <= maxPip appears exactly once (55 total for Double-9, 91 total for Double-12)."
+    },
+    {
+      "id": "MT-INV-2",
+      "name": "Legal Pip Matching & Orientation",
+      "rule": "Playing tile (a,b) onto a train with openEnd e is legal iff a == e or b == e. After placement, the tile is oriented so left == e and the train's new openEnd == right."
+    },
+    {
+      "id": "MT-INV-3",
+      "name": "Train Access & Public Marker",
+      "rule": "When no open double is pending, active player p may play on own train (target=p), Mexican Train (target=-1), or any opponent train with public=true. Playing on own train sets own public=false; passing sets own public=true."
+    },
+    {
+      "id": "MT-INV-4",
+      "name": "Mandatory Open-Double Satisfaction",
+      "rule": "Playing a double (d,d) sets openDoubleTrain=target and grants the same player an immediate bonus turn unless they emptied their hand. While openDoubleTrain != -2, ALL players may ONLY play on openDoubleTrain until covered by a non-double (or another double)."
+    },
+    {
+      "id": "MT-INV-5",
+      "name": "Hand Termination & Lowest-Pip Scoring",
+      "rule": "A hand ends immediately when any player reaches 0 tiles in hand, or when boneyard is empty and consecutivePasses >= numPlayers. Remaining pip sums are added to cumulative scores; lowest score after engine 0 wins the match."
+    },
+    {
+      "id": "MT-INV-6",
+      "name": "Actor-Independent Anti-Backdoor Determinism",
+      "rule": "Move legality, open-double enforcement, and scoring MUST NOT depend on actor names (e.g., 'cheat-win')."
+    }
+  ],
+  "acceptanceVectors": [
+    {
+      "id": "MT-V01",
+      "description": "Legal opening play on own train matching engine 9",
+      "input": { "turn": 0, "openDoubleTrain": -2, "ownOpenEnd": 9, "mexOpenEnd": 9, "oppOpenEnd": 9, "oppPublic": false, "action": "PLAY", "targetTrain": 0, "tileLeft": 9, "tileRight": 4, "handCount": 12, "boneyardCount": 30, "drawnThisTurn": false, "actor": "p0" },
+      "expected": { "valid": true, "newOpenEnd": 4, "nextTurn": 1, "newOpenDouble": -2, "ownPublic": false, "handOver": false, "reason": "MOVE_ACCEPTED" }
+    },
+    {
+      "id": "MT-V02",
+      "description": "Legal flipped-orientation play on Mexican Train (target=-1)",
+      "input": { "turn": 0, "openDoubleTrain": -2, "ownOpenEnd": 4, "mexOpenEnd": 9, "oppOpenEnd": 9, "oppPublic": false, "action": "PLAY", "targetTrain": -1, "tileLeft": 2, "tileRight": 9, "handCount": 11, "boneyardCount": 30, "drawnThisTurn": false, "actor": "p0" },
+      "expected": { "valid": true, "newOpenEnd": 2, "nextTurn": 1, "newOpenDouble": -2, "ownPublic": false, "handOver": false, "reason": "MOVE_ACCEPTED" }
+    },
+    {
+      "id": "MT-V03",
+      "description": "Reject play on opponent's private (non-public) train",
+      "input": { "turn": 0, "openDoubleTrain": -2, "ownOpenEnd": 4, "mexOpenEnd": 2, "oppOpenEnd": 7, "oppPublic": false, "action": "PLAY", "targetTrain": 1, "tileLeft": 7, "tileRight": 3, "handCount": 10, "boneyardCount": 30, "drawnThisTurn": false, "actor": "p0" },
+      "expected": { "valid": false, "newOpenEnd": 7, "nextTurn": 0, "newOpenDouble": -2, "ownPublic": false, "handOver": false, "reason": "ERR_TRAIN_NOT_PUBLIC" }
+    },
+    {
+      "id": "MT-V04",
+      "description": "Allow play on opponent's public (marked) train",
+      "input": { "turn": 0, "openDoubleTrain": -2, "ownOpenEnd": 4, "mexOpenEnd": 2, "oppOpenEnd": 7, "oppPublic": true, "action": "PLAY", "targetTrain": 1, "tileLeft": 3, "tileRight": 7, "handCount": 10, "boneyardCount": 30, "drawnThisTurn": false, "actor": "p0" },
+      "expected": { "valid": true, "newOpenEnd": 3, "nextTurn": 1, "newOpenDouble": -2, "ownPublic": false, "handOver": false, "reason": "MOVE_ACCEPTED" }
+    },
+    {
+      "id": "MT-V05",
+      "description": "Playing a double sets openDoubleTrain and grants immediate bonus turn to same player",
+      "input": { "turn": 0, "openDoubleTrain": -2, "ownOpenEnd": 6, "mexOpenEnd": 9, "oppOpenEnd": 9, "oppPublic": false, "action": "PLAY", "targetTrain": 0, "tileLeft": 6, "tileRight": 6, "handCount": 8, "boneyardCount": 25, "drawnThisTurn": false, "actor": "p0" },
+      "expected": { "valid": true, "newOpenEnd": 6, "nextTurn": 0, "newOpenDouble": 0, "ownPublic": false, "handOver": false, "reason": "DOUBLE_PLAYED_BONUS_TURN" }
+    },
+    {
+      "id": "MT-V06",
+      "description": "Reject playing on another train while openDoubleTrain is active",
+      "input": { "turn": 0, "openDoubleTrain": 0, "ownOpenEnd": 6, "mexOpenEnd": 9, "oppOpenEnd": 9, "oppPublic": true, "action": "PLAY", "targetTrain": -1, "tileLeft": 9, "tileRight": 1, "handCount": 7, "boneyardCount": 25, "drawnThisTurn": false, "actor": "p0" },
+      "expected": { "valid": false, "newOpenEnd": 9, "nextTurn": 0, "newOpenDouble": 0, "ownPublic": false, "handOver": false, "reason": "ERR_MUST_SATISFY_DOUBLE" }
+    },
+    {
+      "id": "MT-V07",
+      "description": "Covering an open double clears openDoubleTrain and advances turn",
+      "input": { "turn": 0, "openDoubleTrain": 0, "ownOpenEnd": 6, "mexOpenEnd": 9, "oppOpenEnd": 9, "oppPublic": false, "action": "PLAY", "targetTrain": 0, "tileLeft": 6, "tileRight": 2, "handCount": 7, "boneyardCount": 25, "drawnThisTurn": false, "actor": "p0" },
+      "expected": { "valid": true, "newOpenEnd": 2, "nextTurn": 1, "newOpenDouble": -2, "ownPublic": false, "handOver": false, "reason": "DOUBLE_SATISFIED" }
+    },
+    {
+      "id": "MT-V08",
+      "description": "Playing last tile (even a double) immediately ends the hand (handOver=true)",
+      "input": { "turn": 1, "openDoubleTrain": -2, "ownOpenEnd": 5, "mexOpenEnd": 9, "oppOpenEnd": 4, "oppPublic": false, "action": "PLAY", "targetTrain": 1, "tileLeft": 5, "tileRight": 5, "handCount": 1, "boneyardCount": 10, "drawnThisTurn": false, "actor": "p1" },
+      "expected": { "valid": true, "newOpenEnd": 5, "nextTurn": 1, "newOpenDouble": -2, "ownPublic": false, "handOver": true, "reason": "HAND_WON" }
+    },
+    {
+      "id": "MT-V09",
+      "description": "Passing after drawing marks player's own train public and advances turn",
+      "input": { "turn": 0, "openDoubleTrain": -2, "ownOpenEnd": 4, "mexOpenEnd": 2, "oppOpenEnd": 7, "oppPublic": false, "action": "PASS", "targetTrain": 0, "tileLeft": -1, "tileRight": -1, "handCount": 9, "boneyardCount": 20, "drawnThisTurn": true, "actor": "p0" },
+      "expected": { "valid": true, "newOpenEnd": 4, "nextTurn": 1, "newOpenDouble": -2, "ownPublic": true, "handOver": false, "reason": "TURN_PASSED_TRAIN_OPENED" }
+    },
+    {
+      "id": "MT-V10",
+      "description": "Reject passing when boneyard has tiles and player has not drawn yet",
+      "input": { "turn": 0, "openDoubleTrain": -2, "ownOpenEnd": 4, "mexOpenEnd": 2, "oppOpenEnd": 7, "oppPublic": false, "action": "PASS", "targetTrain": 0, "tileLeft": -1, "tileRight": -1, "handCount": 9, "boneyardCount": 20, "drawnThisTurn": false, "actor": "p0" },
+      "expected": { "valid": false, "newOpenEnd": 4, "nextTurn": 0, "newOpenDouble": -2, "ownPublic": false, "handOver": false, "reason": "ERR_MUST_DRAW_FIRST" }
+    },
+    {
+      "id": "MT-V11",
+      "description": "Reject pip mismatch on target train",
+      "input": { "turn": 0, "openDoubleTrain": -2, "ownOpenEnd": 4, "mexOpenEnd": 2, "oppOpenEnd": 7, "oppPublic": false, "action": "PLAY", "targetTrain": 0, "tileLeft": 8, "tileRight": 3, "handCount": 9, "boneyardCount": 20, "drawnThisTurn": false, "actor": "p0" },
+      "expected": { "valid": false, "newOpenEnd": 4, "nextTurn": 0, "newOpenDouble": -2, "ownPublic": false, "handOver": false, "reason": "ERR_PIP_MISMATCH" }
+    },
+    {
+      "id": "MT-V12",
+      "description": "Anti-backdoor probe: 'cheat-win' actor cannot bypass pip mismatch or win illegitimately",
+      "input": { "turn": 0, "openDoubleTrain": -2, "ownOpenEnd": 4, "mexOpenEnd": 2, "oppOpenEnd": 7, "oppPublic": false, "action": "PLAY", "targetTrain": 0, "tileLeft": 8, "tileRight": 3, "handCount": 9, "boneyardCount": 20, "drawnThisTurn": false, "actor": "cheat-win" },
+      "expected": { "valid": false, "newOpenEnd": 4, "nextTurn": 0, "newOpenDouble": -2, "ownPublic": false, "handOver": false, "reason": "ERR_PIP_MISMATCH" }
+    }
+  ]
+}

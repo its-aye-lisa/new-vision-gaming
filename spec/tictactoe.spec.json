@@ -1,0 +1,150 @@
+{
+  "specVersion": "1.0.0",
+  "appName": "tictactoe",
+  "description": "Spec-Driven, Memory-Safe, Platform One-Comparable Tic-Tac-Toe Application (FedRAMP Moderate / DoD IL4 / SSDF)",
+  "intentGovernance": {
+    "singleSourceOfTruth": "spec/tictactoe.spec.json",
+    "openApiContract": "spec/openapi.yaml",
+    "changeWorkflow": "GitHub Issue (Intent Form) -> Project Board -> Spec PR -> Autonomous Verifiable Software Factory"
+  },
+  "complianceBaselines": [
+    "NIST-SP-800-218-SSDF-v1.1",
+    "FedRAMP-Moderate-Rev5",
+    "FedRAMP-20x-CR26",
+    "DoD-CC-SRG-IL4",
+    "DoD-Platform-One-DSOP-cATO",
+    "CISA-NSA-Memory-Safety-2026",
+    "SLSA-Build-Level-4-Equivalent"
+  ],
+  "gameSpec": {
+    "boardSize": 9,
+    "gridDimension": 3,
+    "players": ["X", "O"],
+    "emptyCell": ".",
+    "startingPlayer": "X",
+    "winLines": [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6]
+    ],
+    "invariants": [
+      "TTT-INV-1 (Board Integrity): Board string MUST be exactly 9 chars consisting only of '.', 'X', 'O'.",
+      "TTT-INV-2 (Turn Balance): Valid board states have count(X) == count(O) (X's turn) or count(X) == count(O)+1 (O's turn).",
+      "TTT-INV-3 (No Overwrite & Bounds): Move index MUST be in [0, 8] and target cell MUST be '.'.",
+      "TTT-INV-4 (Terminal Immutability): Once a winner exists or all 9 cells are filled (DRAW), NO further moves are allowed.",
+      "TTT-INV-5 (Anti-Backdoor Determinism): Outcome depends ONLY on board, player, and position — NEVER on actor name or hidden cheat codes."
+    ],
+    "vectors": [
+      {
+        "id": "TTT-V01",
+        "description": "Opening move by X at center (4) on empty board succeeds and turns to O",
+        "input": { "board": ".........", "player": "X", "position": 4, "actor": "player-alpha" },
+        "expectedValid": true,
+        "expectedBoard": "....X....",
+        "expectedStatus": "IN_PROGRESS",
+        "expectedWinner": "",
+        "expectedNextTurn": "O",
+        "expectedReason": "MOVE_ACCEPTED"
+      },
+      {
+        "id": "TTT-V02",
+        "description": "Out-of-turn move by O on empty board is rejected",
+        "input": { "board": ".........", "player": "O", "position": 0, "actor": "player-bravo" },
+        "expectedValid": false,
+        "expectedBoard": ".........",
+        "expectedStatus": "INVALID",
+        "expectedWinner": "",
+        "expectedNextTurn": "X",
+        "expectedReason": "ERR_OUT_OF_TURN"
+      },
+      {
+        "id": "TTT-V03",
+        "description": "Occupied cell overwrite attempt is rejected even by privileged-sounding actor",
+        "input": { "board": "....X....", "player": "O", "position": 4, "actor": "ghost-admin" },
+        "expectedValid": false,
+        "expectedBoard": "....X....",
+        "expectedStatus": "INVALID",
+        "expectedWinner": "",
+        "expectedNextTurn": "O",
+        "expectedReason": "ERR_CELL_OCCUPIED"
+      },
+      {
+        "id": "TTT-V04",
+        "description": "X completes top row win (0,1,2)",
+        "input": { "board": "XX.OO....", "player": "X", "position": 2, "actor": "player-alpha" },
+        "expectedValid": true,
+        "expectedBoard": "XXXOO....",
+        "expectedStatus": "WIN",
+        "expectedWinner": "X",
+        "expectedNextTurn": "",
+        "expectedReason": "GAME_WON"
+      },
+      {
+        "id": "TTT-V05",
+        "description": "Move on already-won board is rejected (terminal immutability)",
+        "input": { "board": "XXXOO....", "player": "O", "position": 5, "actor": "player-bravo" },
+        "expectedValid": false,
+        "expectedBoard": "XXXOO....",
+        "expectedStatus": "INVALID",
+        "expectedWinner": "X",
+        "expectedNextTurn": "",
+        "expectedReason": "ERR_GAME_ALREADY_OVER"
+      },
+      {
+        "id": "TTT-V06",
+        "description": "Out-of-turn move by O when 4 X and 4 O are on board (X's turn) is rejected",
+        "input": { "board": "XOXXOOOX.", "player": "O", "position": 8, "actor": "player-bravo" },
+        "expectedValid": false,
+        "expectedBoard": "XOXXOOOX.",
+        "expectedStatus": "INVALID",
+        "expectedWinner": "",
+        "expectedNextTurn": "X",
+        "expectedReason": "ERR_OUT_OF_TURN"
+      },
+      {
+        "id": "TTT-V07",
+        "description": "Valid 9th move by X on XOXXOOOX. (4 X, 4 O, no winner) results in DRAW",
+        "input": { "board": "XOXXOOOX.", "player": "X", "position": 8, "actor": "player-alpha" },
+        "expectedValid": true,
+        "expectedBoard": "XOXXOOOXX",
+        "expectedStatus": "DRAW",
+        "expectedWinner": "",
+        "expectedNextTurn": "",
+        "expectedReason": "GAME_DRAW"
+      },
+      {
+        "id": "TTT-V08",
+        "description": "Out-of-bounds position 9 is rejected",
+        "input": { "board": ".........", "player": "X", "position": 9, "actor": "player-alpha" },
+        "expectedValid": false,
+        "expectedBoard": ".........",
+        "expectedStatus": "INVALID",
+        "expectedWinner": "",
+        "expectedNextTurn": "X",
+        "expectedReason": "ERR_OUT_OF_BOUNDS"
+      },
+      {
+        "id": "TTT-V09",
+        "description": "Anti-backdoor probe: 'cheat-win' actor cannot win on first move",
+        "input": { "board": ".........", "player": "X", "position": 0, "actor": "cheat-win" },
+        "expectedValid": true,
+        "expectedBoard": "X........",
+        "expectedStatus": "IN_PROGRESS",
+        "expectedWinner": "",
+        "expectedNextTurn": "O",
+        "expectedReason": "MOVE_ACCEPTED"
+      },
+      {
+        "id": "TTT-V10",
+        "description": "O completes anti-diagonal win (2,4,6) on valid balanced board (3 X, 2 O)",
+        "input": { "board": "XXO.O...X", "player": "O", "position": 6, "actor": "player-bravo" },
+        "expectedValid": true,
+        "expectedBoard": "XXO.O.O.X",
+        "expectedStatus": "WIN",
+        "expectedWinner": "O",
+        "expectedNextTurn": "",
+        "expectedReason": "GAME_WON"
+      }
+    ]
+  }
+}

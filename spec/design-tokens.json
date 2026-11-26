@@ -1,0 +1,47 @@
+{
+  "$schema": "https://tr.designtokens.org/format/",
+  "meta": {
+    "name": "Aegis Tactical Design System",
+    "version": "1.0.0",
+    "standard": "W3C Design Tokens Community Group (DTCG)",
+    "sourceOfTruth": "spec/design-tokens.json",
+    "cssTarget": "app/web/styles/input.css"
+  },
+  "color": {
+    "surface": {
+      "canvas": { "$type": "color", "$value": "#090f1c" },
+      "card": { "$type": "color", "$value": "#111a2e" },
+      "cell": { "$type": "color", "$value": "#0d1526" },
+      "cellHover": { "$type": "color", "$value": "#172542" }
+    },
+    "border": {
+      "subtle": { "$type": "color", "$value": "#243452" },
+      "focus": { "$type": "color", "$value": "#38bdf8" }
+    },
+    "ink": {
+      "primary": { "$type": "color", "$value": "#e8eef8" },
+      "muted": { "$type": "color", "$value": "#8ea2c3" },
+      "inverse": { "$type": "color", "$value": "#071324" }
+    },
+    "accent": {
+      "primary": { "$type": "color", "$value": "#38bdf8" },
+      "playerX": { "$type": "color", "$value": "#38bdf8" },
+      "playerO": { "$type": "color", "$value": "#f59e0b" }
+    },
+    "status": {
+      "verified": { "$type": "color", "$value": "#22c55e" },
+      "warning": { "$type": "color", "$value": "#f59e0b" },
+      "danger": { "$type": "color", "$value": "#ef4444" }
+    }
+  },
+  "radius": {
+    "card": { "$type": "dimension", "$value": "1rem" },
+    "cell": { "$type": "dimension", "$value": "0.75rem" },
+    "control": { "$type": "dimension", "$value": "0.5rem" },
+    "pill": { "$type": "dimension", "$value": "9999px" }
+  },
+  "typography": {
+    "fontSans": { "$type": "fontFamily", "$value": "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif" },
+    "fontMono": { "$type": "fontFamily", "$value": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" }
+  }
+}

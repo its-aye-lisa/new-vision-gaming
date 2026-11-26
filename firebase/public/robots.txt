@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://newvisiongaming.web.app/sitemap.xml

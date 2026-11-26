@@ -1,0 +1,14 @@
+# Build outputs, downloaded decoupled factory & ephemeral keys (NEVER commit signing keys!)
+bin/
+dist/
+_factory/
+.factory-state/
+*.key.json
+*.pem
+.env
+.env.*
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+.DS_Store
+.agents/workflows/*.bak

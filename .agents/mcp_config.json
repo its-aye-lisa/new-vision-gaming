@@ -1,0 +1,57 @@
+{
+  "mcpServers": {
+    "github": {
+      "serverUrl": "https://api.githubcopilot.com/mcp/",
+      "disabled": true,
+      "enabledTools": [
+        "get_issue",
+        "list_issues",
+        "create_issue",
+        "add_issue_comment",
+        "get_pull_request",
+        "list_pull_requests",
+        "create_pull_request",
+        "list_workflow_runs"
+      ],
+      "timeoutSeconds": 60
+    },
+    "firebase": {
+      "command": "npx",
+      "args": ["-y", "firebase-tools@latest", "mcp"],
+      "disabled": true,
+      "enabledTools": [
+        "firebase_get_project",
+        "firestore_get_rules",
+        "hosting_list_sites",
+        "firebase_validate_config"
+      ],
+      "timeoutSeconds": 120
+    },
+    "cloud-run": {
+      "serverUrl": "https://run.googleapis.com/mcp",
+      "authProviderType": "google_credentials",
+      "disabled": true,
+      "enabledTools": [
+        "list_services",
+        "get_service",
+        "list_revisions",
+        "get_service_log"
+      ],
+      "timeoutSeconds": 120
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest", "--headless"],
+      "disabled": true,
+      "enabledTools": [
+        "navigate_page",
+        "take_screenshot",
+        "list_console_messages",
+        "list_network_requests",
+        "performance_start_trace",
+        "performance_stop_trace"
+      ],
+      "timeoutSeconds": 120
+    }
+  }
+}

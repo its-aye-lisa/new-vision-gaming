@@ -1,0 +1,27 @@
+{
+  "nvg-zero-trust-pretool-guard": {
+    "enabled": true,
+    "PreToolUse": [
+      {
+        "matcher": "run_command|view_file|write_to_file|replace_file_content|multi_replace_file_content",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ./hooks/pre_tool_guard.py || printf '{\"decision\":\"force_ask\",\"reason\":\"nvg-zero-trust-pretool-guard unavailable; manual approval required\"}\\n'",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "nvg-stop-fast-check-gate": {
+    "enabled": true,
+    "Stop": [
+      {
+        "type": "command",
+        "command": "python3 ./hooks/stop_fast_check.py || printf '{\"decision\":\"allow\"}\\n'",
+        "timeout": 25
+      }
+    ]
+  }
+}

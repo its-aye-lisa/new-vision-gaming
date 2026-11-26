@@ -1,0 +1,46 @@
+@import "tailwindcss";
+@source "../templates/*.tmpl";
+
+/*
+ * Generated from spec/design-tokens.json (W3C DTCG Token-Based Design System).
+ * Zero runtime CDN dependencies; compiled into app/web/static/tailwind.css
+ * and embedded into the static Go binary via //go:embed.
+ */
+@theme {
+  --color-surface-canvas: #090f1c;
+  --color-surface-card: #111a2e;
+  --color-surface-cell: #0d1526;
+  --color-surface-cell-hover: #172542;
+
+  --color-border-subtle: #243452;
+  --color-border-focus: #38bdf8;
+
+  --color-ink-primary: #e8eef8;
+  --color-ink-muted: #8ea2c3;
+  --color-ink-inverse: #071324;
+
+  --color-accent-primary: #38bdf8;
+  --color-player-x: #38bdf8;
+  --color-player-o: #f59e0b;
+
+  --color-status-verified: #22c55e;
+  --color-status-warning: #f59e0b;
+  --color-status-danger: #ef4444;
+
+  --radius-card: 1rem;
+  --radius-cell: 0.75rem;
+  --radius-control: 0.5rem;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Safe-area insets for iOS PWA / Dynamic Island & Phase 2 Capacitor mobile shells */
+@layer utilities {
+  .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .px-safe {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+}

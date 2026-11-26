@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["TEAMID.com.newvisiongaming.arcade"],
+        "components": [
+          { "/": "/play/*", "comment": "2-player 6-letter invite room deep links" },
+          { "/": "/games/*", "comment": "Direct classic game landing deep links" }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "suiteVersion": "1.0.0",
+  "brand": "New Vision Gaming",
+  "domain": "newvisiongaming.web.app",
+  "hostingStack": "Firebase Hosting + Cloud Run (Go 1.24 FIPS 140-3) + Firestore",
+  "monetization": {
+    "model": "Ad-Supported Free-to-Play Classic Games",
+    "networks": ["Google AdSense (SafeFrame + Nonce Strict CSP)", "Google AdMob (PWA/Mobile)"],
+    "adSlots": [
+      { "id": "nvg-top-leaderboard", "placement": "above-fold-header", "desktopSize": "728x90", "mobileSize": "320x50", "reservedMinHeightPx": 90, "zeroCLS": true },
+      { "id": "nvg-sidebar-rect", "placement": "desktop-right-rail", "desktopSize": "300x250", "mobileSize": "hidden", "reservedMinHeightPx": 250, "zeroCLS": true },
+      { "id": "nvg-post-match-banner", "placement": "between-rounds", "desktopSize": "336x280", "mobileSize": "300x250", "reservedMinHeightPx": 100, "zeroCLS": true }
+    ],
+    "coreWebVitalsTargets": {
+      "ttfbMs": 100,
+      "lcpMs": 1200,
+      "clsMax": 0.01
+    },
+    "shellAdPolicy": {
+      "web": "Google AdSense / H5 Games Ads (SafeFrame + CSPRNG Nonce CSP)",
+      "pwa": "Google AdSense / H5 Games Ads (SafeFrame + CSPRNG Nonce CSP)",
+      "native-ios": "SUPPRESS web AdSense tags; delegate to native Google AdMob SDK via Capacitor bridge",
+      "native-android": "SUPPRESS web AdSense tags; delegate to native Google AdMob SDK via Capacitor bridge"
+    }
+  },
+  "platformPortability": {
+    "phase1": "Web-First Installable PWA (Firebase Hosting + Cloud Run + Firestore)",
+    "phase2": "Capacitor Native Shell (iOS App Store + Google Play) with Offline Go-WASM Kernels, Native AdMob SDK, FCM Push & Haptics",
+    "wasmPortableKernels": true,
+    "canonicalRoutes": {
+      "gameLanding": "/games/{slug}",
+      "inviteDeepLink": "/play/{roomCode}",
+      "versionedApiPrefix": "/api/v1/",
+      "pwaManifest": "/manifest.webmanifest",
+      "webAdsTxt": "/ads.txt",
+      "mobileAppAdsTxt": "/app-ads.txt",
+      "iosUniversalLinks": "/.well-known/apple-app-site-association",
+      "androidAppLinks": "/.well-known/assetlinks.json",
+      "a2aAgentCard": "/.well-known/agent-card.json"
+    }
+  },
+  "games": [
+    {
+      "slug": "tictactoe",
+      "title": "Tic-Tac-Toe",
+      "status": "LIVE",
+      "modes": ["2p-local", "2p-room", "bot", "a2a-agent"],
+      "specPath": "spec/tictactoe.spec.json",
+      "kernelPackage": "app/pkg/tictactoe",
+      "cleanRoomVerifier": "cleanroom/c-verifier/tictactoe_kernel.c",
+      "avgSessionMinutes": 4.5,
+      "targetAdImpressionsPerSession": 3.2
+    },
+    {
+      "slug": "mexican-train",
+      "title": "Mexican Train Dominoes (Double-9 & Double-12)",
+      "status": "LIVE",
+      "modes": ["2p-room", "bots", "pass-and-play", "a2a-agent"],
+      "specPath": "spec/mexican-train.spec.json",
+      "kernelPackage": "app/pkg/mexicantrain",
+      "cleanRoomVerifier": "cleanroom/c-verifier/mexicantrain_kernel.c",
+      "avgSessionMinutes": 22.0,
+      "targetAdImpressionsPerSession": 8.0
+    },
+    {
+      "slug": "chickenfoot-dominoes",
+      "title": "Chickenfoot & All-Fives Dominoes",
+      "status": "PLANNED_PHASE_2",
+      "modes": ["2p-room", "multiplayer-2-to-4", "bots"],
+      "specPath": "spec/chickenfoot.spec.json",
+      "avgSessionMinutes": 16.0,
+      "targetAdImpressionsPerSession": 6.5
+    },
+    {
+      "slug": "backgammon",
+      "title": "Classic Backgammon",
+      "status": "PLANNED_PHASE_2",
+      "modes": ["2p-room", "bots"],
+      "specPath": "spec/backgammon.spec.json",
+      "avgSessionMinutes": 15.0,
+      "targetAdImpressionsPerSession": 6.0
+    },
+    {
+      "slug": "gin-rummy",
+      "title": "Gin Rummy & Cribbage",
+      "status": "PLANNED_PHASE_3",
+      "modes": ["2p-room", "bots"],
+      "specPath": "spec/gin-rummy.spec.json",
+      "avgSessionMinutes": 16.0,
+      "targetAdImpressionsPerSession": 6.5
+    },
+    {
+      "slug": "four-in-a-row",
+      "title": "Four-in-a-Row & Mancala",
+      "status": "PLANNED_PHASE_3",
+      "modes": ["2p-room", "bots"],
+      "specPath": "spec/four-in-a-row.spec.json",
+      "avgSessionMinutes": 8.0,
+      "targetAdImpressionsPerSession": 4.5
+    }
+  ]
+}

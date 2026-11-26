@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "new-vision-gaming-dev",
+    "dev": "new-vision-gaming-dev",
+    "staging": "new-vision-gaming-staging",
+    "prod": "new-vision-gaming-prod"
+  }
+}

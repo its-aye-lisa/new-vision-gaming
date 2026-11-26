@@ -1,0 +1,96 @@
+{{define "mexicantrain.tmpl"}}
+<div class="space-y-6">
+  <header class="flex items-start justify-between gap-4 flex-wrap">
+    <div>
+      <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-status-verified/15 text-status-verified border border-status-verified/35">
+          FLAGSHIP &bull; CLEAN-ROOM 3-WAY VERIFIED
+        </span>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-surface-cell text-ink-muted border border-border-subtle">
+          2-Player Rooms &amp; Offline-Ready WASM Kernel
+        </span>
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight text-ink-primary">Mexican Train Dominoes</h1>
+      <p class="text-xs text-ink-muted mt-1">
+        Classic Double-9 (10 hands) &amp; Double-12 (13 hands) &bull; Instant 6-letter friend invite links &bull; Zero mid-hand ad interruptions.
+      </p>
+    </div>
+  </header>
+
+  {{if .Notice}}
+  <div class="rounded-control border border-status-warning/40 bg-status-warning/10 px-3 py-2 text-xs text-status-warning font-medium">
+    {{.Notice}}
+  </div>
+  {{end}}
+
+  <section id="mt-game-root">
+    {{if .MT}}
+      {{template "mexicantrain_board.tmpl" .MT}}
+    {{else}}
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Quick Solo vs Bot -->
+        <div class="rounded-cell border border-border-focus bg-surface-cell p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="font-bold text-ink-primary">Play Solo vs. NVG Bot</h2>
+            <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-accent-primary/15 text-accent-primary">INSTANT</span>
+          </div>
+          <p class="text-xs text-ink-muted">Zero wait time. Practice open-double tactics and train defense against our deterministic Go bot.</p>
+          <div class="flex items-center gap-2 flex-wrap">
+            <form method="post" action="/hx/mt/new" hx-post="/hx/mt/new" hx-target="#mt-game-root" hx-swap="innerHTML">
+              <input type="hidden" name="mode" value="bot" />
+              <input type="hidden" name="variant" value="9" />
+              <button type="submit" class="px-3 py-2 rounded-control bg-accent-primary text-ink-inverse text-xs font-bold hover:opacity-90 cursor-pointer">
+                Double-9 (10 Hands)
+              </button>
+            </form>
+            <form method="post" action="/hx/mt/new" hx-post="/hx/mt/new" hx-target="#mt-game-root" hx-swap="innerHTML">
+              <input type="hidden" name="mode" value="bot" />
+              <input type="hidden" name="variant" value="12" />
+              <button type="submit" class="px-3 py-2 rounded-control bg-surface-card border border-border-subtle text-ink-primary text-xs font-semibold hover:border-border-focus cursor-pointer">
+                Double-12 (13 Hands)
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- 2-Player 6-Letter Invite Room -->
+        <div class="rounded-cell border border-status-verified/40 bg-surface-cell p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="font-bold text-ink-primary">2-Player Invite Room</h2>
+            <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-status-verified/15 text-status-verified">NO LOGIN</span>
+          </div>
+          <p class="text-xs text-ink-muted">Generate a private <span class="font-mono text-ink-primary">/play/MEX-XXXX</span> link to text to a friend. Hidden hands stay strictly isolated per seat.</p>
+          <div class="flex items-center gap-2 flex-wrap">
+            <form method="post" action="/hx/mt/new">
+              <input type="hidden" name="mode" value="2p" />
+              <input type="hidden" name="variant" value="9" />
+              <button type="submit" class="px-3 py-2 rounded-control bg-status-verified text-ink-inverse text-xs font-bold hover:opacity-90 cursor-pointer">
+                Create Double-9 Room
+              </button>
+            </form>
+            <form method="post" action="/hx/mt/new">
+              <input type="hidden" name="mode" value="2p" />
+              <input type="hidden" name="variant" value="12" />
+              <button type="submit" class="px-3 py-2 rounded-control bg-surface-card border border-border-subtle text-ink-primary text-xs font-semibold hover:border-border-focus cursor-pointer">
+                Create Double-12 Room
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Concise Official Rules Card (SEO + AdSense Publisher Content) -->
+      <div class="mt-5 rounded-cell border border-border-subtle bg-surface-cell/60 p-4 text-xs text-ink-muted space-y-2">
+        <h3 class="font-bold text-ink-primary uppercase tracking-wider">Official Mexican Train Rules</h3>
+        <ul class="list-disc pl-4 space-y-1">
+          <li><strong>The Engine:</strong> Each hand starts with the highest double in the center (Double-9 down to Double-0).</li>
+          <li><strong>Train Access:</strong> Play matching tiles on your own train, the public Mexican Train, or any opponent&rsquo;s train marked <strong>OPEN</strong>.</li>
+          <li><strong>Mandatory Doubles:</strong> Playing a double gives an immediate bonus turn to satisfy it. Until covered, <em>all</em> players must play on that open double.</li>
+          <li><strong>Draw &amp; Pass:</strong> If you cannot play, draw 1 tile from the boneyard. If still unable to play, pass &mdash; marking your personal train <strong>OPEN</strong> until you play on it again.</li>
+          <li><strong>Lowest Score Wins:</strong> Going out scores 0; opponents add remaining hand pips. Lowest cumulative score after the [0|0] hand wins!</li>
+        </ul>
+      </div>
+    {{end}}
+  </section>
+</div>
+{{end}}

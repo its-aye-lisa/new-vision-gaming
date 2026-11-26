@@ -1,0 +1,47 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "NVG: Tier 1 Fast-Check (<1s)",
+      "type": "shell",
+      "command": "make fast-check",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "NVG: Compile Tailwind v4 Design Tokens CSS",
+      "type": "shell",
+      "command": "/tmp/tailwindcss -i app/web/styles/input.css -o app/web/static/tailwind.css --minify",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "NVG: Live DAST, GoTH, A2A/A2UI & FIPS 140-3 Probe",
+      "type": "shell",
+      "command": "make dast",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "NVG: Full Decoupled 9-Gate Factory & Admission (FedRAMP/IL4/SLSA L4)",
+      "type": "shell",
+      "command": "make factory && make admit",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "NVG: 6 Untrusted-Developer Red-Team Simulations",
+      "type": "shell",
+      "command": "make simulate-attacks",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "NVG: Serve Arcade Locally (FIPS 140-3 + ADS_ENABLED=true)",
+      "type": "shell",
+      "command": "GODEBUG=fips140=on ADS_ENABLED=true make serve",
+      "isBackground": true,
+      "problemMatcher": []
+    }
+  ]
+}

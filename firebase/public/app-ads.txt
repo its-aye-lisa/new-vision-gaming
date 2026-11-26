@@ -1,0 +1,3 @@
+# Authorized Mobile App Sellers (Google AdMob — Phase 2 iOS/Android App Store)
+# Replace pub-0000000000000000 with your real Google AdMob publisher ID before store launch.
+google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0

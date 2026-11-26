@@ -1,0 +1,34 @@
+{{define "privacy.tmpl"}}
+<article class="space-y-4 text-sm text-ink-muted">
+  <h1 class="text-2xl font-bold text-ink-primary">Privacy Policy &amp; Advertising Disclosure</h1>
+  <p><strong>Effective Date:</strong> November 2026 &bull; <strong>Operator:</strong> New Vision Gaming LLC</p>
+  <p>
+    New Vision Gaming provides free-to-play classic strategy games across Web/PWA and upcoming iOS/Android mobile apps,
+    supported by advertising partners (Google AdSense / H5 Games Ads on Web; Google AdMob SDK on Native Mobile Apps)
+    and hosted on Google Firebase and Cloud Run infrastructure.
+  </p>
+  <h2 class="text-base font-bold text-ink-primary">1. Data We Collect</h2>
+  <p>
+    Single-player and local games require no account creation. Optional multiplayer rooms and saved profiles use
+    anonymous-first Firebase Authentication (upgradable to Sign in with Apple or Google). Server security audit logs
+    record minimal technical telemetry (timestamp, move validity, HTTP status) for reliability and anti-cheat defense.
+  </p>
+  <h2 class="text-base font-bold text-ink-primary">2. Advertising, Cookies &amp; Consent (GDPR / CCPA / ATT / COPPA)</h2>
+  <p>
+    On the Web, when advertising is enabled, Google AdSense uses cookies or local storage subject to regional consent
+    (EEA/UK/California CMP). On Native iOS and Android apps, web AdSense is disabled and ads are served exclusively via
+    the native Google AdMob SDK respecting Apple App Tracking Transparency (ATT) and Google Play Families policies.
+    Our games are designed for general audiences and do not knowingly collect personal data from children under 13 (COPPA).
+  </p>
+  <h2 class="text-base font-bold text-ink-primary">3. Account &amp; Data Deletion</h2>
+  <p>
+    Players with an optional saved profile may delete their account and all associated profile data at any time directly
+    in-app or by emailing <strong>privacy@newvisiongaming.example</strong>. Anonymous game rooms expire automatically.
+  </p>
+  <h2 class="text-base font-bold text-ink-primary">4. Authorized Digital Sellers</h2>
+  <p>
+    Web sellers: <a href="/ads.txt" class="text-accent-primary underline">/ads.txt</a> &bull;
+    Mobile App sellers (AdMob): <a href="/app-ads.txt" class="text-accent-primary underline">/app-ads.txt</a>.
+  </p>
+</article>
+{{end}}

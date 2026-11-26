@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Public read-only leaderboards (written ONLY by verified Cloud Run backend via Admin SDK)
+    match /leaderboards/{gameSlug}/daily/{dateId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Authenticated player profiles (supports anonymous-first Firebase Auth upgrading to Apple/Google in Phase 2)
+    match /players/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['displayName', 'updatedAt', 'consentPreferences', 'pushOptIn'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 32;
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // 2-Player / Multiplayer Rooms (e.g., Mexican Train Dominoes 6-letter invite rooms):
+    // ALL state mutations are authoritative in Cloud Run (Admin SDK).
+    // Hidden player hands are strictly isolated per UID so opponents can NEVER read another player's tiles.
+    match /rooms/{roomCode} {
+      allow read: if request.auth != null
+        && request.auth.uid in resource.data.memberUids;
+      allow write: if false;
+
+      match /privateHands/{uid} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow write: if false;
+      }
+    }
+
+    // Default deny everything else (Fail-Closed Zero Trust)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

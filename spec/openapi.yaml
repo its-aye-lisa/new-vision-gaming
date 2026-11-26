@@ -1,0 +1,62 @@
+openapi: 3.0.3
+info:
+  title: Tic-Tac-Toe Spec-Driven API (GoTH + A2A v1.0 + A2UI v1.0)
+  version: 1.0.0
+  description: >
+    Hardened, memory-safe, FIPS 140-3 Tic-Tac-Toe application with Go html/template,
+    W3C DTCG Tailwind design tokens, vendored HTMX 2.0.4, A2A v1.0 Agent2Agent,
+    and A2UI v1.0 declarative surfaces. Consumed by OWASP ZAP API DAST in CI/CD.
+servers:
+  - url: http://127.0.0.1:8080
+paths:
+  /health:
+    get:
+      summary: Health, FIPS 140-3, UI Stack & Self-Attestation readiness probe
+      responses:
+        '200': { description: Service healthy }
+  /api/move:
+    post:
+      summary: Apply a deterministic Tic-Tac-Toe move via REST JSON
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [board, player, position]
+              additionalProperties: false
+              properties:
+                board: { type: string, minLength: 9, maxLength: 9, example: "........." }
+                player: { type: string, enum: ["X", "O"], example: "X" }
+                position: { type: integer, minimum: 0, maximum: 8, example: 4 }
+                actor: { type: string, example: "player-alpha" }
+      responses:
+        '200': { description: Deterministic move evaluation result }
+        '400': { description: Invalid or non-conforming JSON payload }
+        '405': { description: Method not allowed }
+        '413': { description: Request body exceeds 64 KiB limit }
+  /hx/move:
+    post:
+      summary: HTMX fragment endpoint returning server-rendered board.tmpl
+      responses:
+        '200': { description: Rendered HTML partial }
+  /hx/reset:
+    post:
+      summary: HTMX fragment endpoint resetting the board
+      responses:
+        '200': { description: Fresh rendered HTML board partial }
+  /.well-known/agent-card.json:
+    get:
+      summary: A2A v1.0 Agent Card discovery document
+      responses:
+        '200': { description: A2A v1.0 Agent Card JSON }
+  /a2a:
+    post:
+      summary: A2A v1.0 JSON-RPC 2.0 task endpoint (message/send, tasks/send)
+      responses:
+        '200': { description: Completed A2A Task with game decision and A2UI v1.0 surface artifact }
+  /api/a2ui/surface:
+    get:
+      summary: A2UI v1.0 declarative JSON surface bound to spec/design-tokens.json
+      responses:
+        '200': { description: A2UI v1.0 createSurface / updateComponents / updateDataModel payload }
