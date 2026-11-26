@@ -177,11 +177,14 @@ jobs:
         run: |
           docker run -d --name nvg-arcade-dast --read-only --cap-drop=ALL --security-opt=no-new-privileges:true -p 127.0.0.1:8080:8080 "${{ steps.meta.outputs.image_tag }}"
           sleep 2
-          if ! curl -fsS http://127.0.0.1:8080/health | tee /tmp/health.json; then
+          if ! curl -fsS http://127.0.0.1:8080/health -o /tmp/health.json; then
+            echo "=== CONTAINER STATUS ==="
+            docker ps -a --filter name=nvg-arcade-dast || true
             echo "=== CONTAINER LOGS ==="
-            docker logs nvg-arcade-dast || true
+            docker logs nvg-arcade-dast 2>&1 || true
             exit 1
           fi
+          cat /tmp/health.json
           grep '"fips140Enabled":true' /tmp/health.json
           grep '"selfVerified":true' /tmp/health.json
 
