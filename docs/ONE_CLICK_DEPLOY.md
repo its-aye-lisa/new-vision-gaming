@@ -1,34 +1,25 @@
-# One-Click Web Deployment (Google Cloud Run + Firebase Hosting)
+# Create New Google Cloud / Firebase Project & Deploy (1-Click Walkthrough)
 
 <walkthrough-tutorial-duration duration="3"></walkthrough-tutorial-duration>
 
-Welcome to **New Vision Gaming**! Follow these 2 clicks inside Google Cloud Shell to launch your verified **Mexican Train Dominoes** & **Tic-Tac-Toe** Classic Games Suite live on HTTPS.
+Welcome to **New Vision Gaming**! This Cloud Shell walkthrough creates a **brand-new Google Cloud + Firebase project**, enables Cloud Run + Firebase Hosting + Firestore, wires your GitHub Actions 1-Click Deploy button, and deploys **Mexican Train Dominoes** & **Tic-Tac-Toe** live on HTTPS.
 
-## Step 1: Pick Your Google Cloud / Firebase Project
+## Step 1: Create Your New Project & Wire GitHub 1-Click Deploy
 
-<walkthrough-project-setup billing="true"></walkthrough-project-setup>
-
-## Step 2: Run the 1-Command Auto-Deploy
-
-Click the button below to deploy directly to **Cloud Run (FIPS 140-3)** and wire up your **GitHub Actions 1-Click Deploy** button:
+Run this single command (it auto-creates a brand-new `new-vision-gaming-<id>` GCP + Firebase project, links billing, uploads the GitHub deployer secret, and triggers your first live deploy):
 
 ```bash
 chmod +x scripts/bootstrap-firebase-github.sh
-./scripts/bootstrap-firebase-github.sh "$GOOGLE_CLOUD_PROJECT"
+./scripts/bootstrap-firebase-github.sh
 ```
 
-Or deploy immediately right from Cloud Shell without GitHub secrets:
+*(Want a custom project ID? Pass it as the first argument, e.g. `./scripts/bootstrap-firebase-github.sh new-vision-gaming-prod`.)*
 
-```bash
-gcloud run deploy nvg-arcade \
-  --source . \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --min-instances 0 \
-  --set-env-vars GODEBUG=fips140=on,ADS_ENABLED=false
-```
+## Step 2: Watch Your Live Deploy
+
+Once the script finishes, open your GitHub Actions tab and watch **`Deploy to Firebase & Cloud Run (1-Click)`** verify through the 9-Gate Factory and publish your live URL (`https://<your-project-id>.web.app`).
 
 <walkthrough-conclusion-trophy></walkthrough-conclusion-trophy>
 
-Once deployed, every future release is literally **one click**:
-**GitHub → Actions → Deploy to Firebase & Cloud Run (1-Click) → Run workflow**!
+From now on, every deployment is literally **one click** in GitHub:
+**`Actions` → `Deploy to Firebase & Cloud Run (1-Click)` → `Run workflow`**!

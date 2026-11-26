@@ -1,32 +1,41 @@
 #!/usr/bin/env bash
 # =============================================================================
-# One-Time Bootstrap: Wire Your Firebase/GCP Project to GitHub 1-Click Deploy
+# One-Command Bootstrap: Create (or Use) GCP/Firebase Project + Wire GitHub 1-Click Deploy
 # =============================================================================
-# Run this once inside Google Cloud Shell (or any terminal with gcloud & gh):
-#   ./scripts/bootstrap-firebase-github.sh <YOUR_GCP_PROJECT_ID> [ca-pub-XXXX]
+# Run inside Google Cloud Shell (or any terminal with gcloud + gh):
+#   ./scripts/bootstrap-firebase-github.sh [PROJECT_ID] [ADSENSE_CLIENT_ID]
 #
-# What it does automatically:
-#   1. Enables Cloud Run, Cloud Build, Artifact Registry, Firebase Hosting & Firestore APIs
-#   2. Creates a least-privilege deployer service account (nvg-github-deployer)
-#   3. Configures FIREBASE_PROJECT_ID & GCP_SA_KEY in your GitHub repository
-#   4. Triggers the 1-Click "Deploy to Firebase & Cloud Run" GitHub Actions workflow!
+# If PROJECT_ID is omitted, generates a unique ID like new-vision-gaming-4821
+# and creates a brand-new Google Cloud + Firebase project automatically!
 # =============================================================================
 set -euo pipefail
 
-PROJECT_ID="${1:-}"
+SUFFIX="$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 5 || echo "prod1")"
+PROJECT_ID="${1:-new-vision-gaming-${SUFFIX}}"
 ADSENSE_ID="${2:-ca-pub-0000000000000000}"
 REPO="${GITHUB_REPO:-its-aye-lisa/new-vision-gaming}"
 SA_NAME="nvg-github-deployer"
-
-if [ -z "$PROJECT_ID" ]; then
-  echo "Usage: $0 <GCP_OR_FIREBASE_PROJECT_ID> [ADSENSE_CLIENT_ID]"
-  exit 1
-fi
-
 SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 
-echo "==> [1/5] Enabling required Google Cloud & Firebase APIs on ${PROJECT_ID}..."
+echo "==> [1/6] Checking Google Cloud project '${PROJECT_ID}'..."
+if ! gcloud projects describe "$PROJECT_ID" >/dev/null 2>&1; then
+  echo "    Project does not exist yet — creating brand-new Google Cloud project '${PROJECT_ID}'..."
+  gcloud projects create "$PROJECT_ID" --name="New Vision Gaming"
+  echo "    Created '${PROJECT_ID}'!"
+  echo "    Linking billing account (required for Cloud Run free tier)..."
+  BILLING_ID="$(gcloud billing accounts list --filter='open=true' --format='value(name)' | head -n1 || true)"
+  if [ -n "$BILLING_ID" ]; then
+    gcloud billing projects link "$PROJECT_ID" --billing-account="$BILLING_ID"
+    echo "    Linked billing account: ${BILLING_ID}"
+  else
+    echo "    NOTE: No active billing account auto-detected. Link one at:"
+    echo "          https://console.cloud.google.com/billing/linkedaccount?project=${PROJECT_ID}"
+  fi
+fi
+
 gcloud config set project "$PROJECT_ID"
+
+echo "==> [2/6] Enabling Cloud Run, Artifact Registry, Firebase Hosting & Firestore APIs..."
 gcloud services enable \
   run.googleapis.com \
   cloudbuild.googleapis.com \
@@ -35,7 +44,14 @@ gcloud services enable \
   firebasehosting.googleapis.com \
   firestore.googleapis.com
 
-echo "==> [2/5] Creating least-privilege deployer service account (${SA_EMAIL})..."
+echo "==> [3/6] Adding Firebase to project '${PROJECT_ID}'..."
+if command -v firebase >/dev/null 2>&1; then
+  firebase projects:addfirebase "$PROJECT_ID" 2>/dev/null || true
+else
+  npx -y firebase-tools@latest projects:addfirebase "$PROJECT_ID" 2>/dev/null || true
+fi
+
+echo "==> [4/6] Creating least-privilege GitHub deployer service account (${SA_EMAIL})..."
 if ! gcloud iam service-accounts describe "$SA_EMAIL" >/dev/null 2>&1; then
   gcloud iam service-accounts create "$SA_NAME" \
     --display-name="New Vision Gaming GitHub 1-Click Deployer"
@@ -55,7 +71,12 @@ for role in \
     --quiet >/dev/null
 done
 
-echo "==> [3/5] Generating ephemeral key & uploading to GitHub Secrets (${REPO})..."
+echo "==> [5/6] Uploading FIREBASE_PROJECT_ID & GCP_SA_KEY to GitHub (${REPO})..."
+if ! gh auth status >/dev/null 2>&1; then
+  echo "    Logging into GitHub CLI once so we can wire GitHub Actions secrets..."
+  gh auth login --web
+fi
+
 TMP_KEY="$(mktemp)"
 trap 'rm -f "$TMP_KEY"' EXIT
 gcloud iam service-accounts keys create "$TMP_KEY" --iam-account="$SA_EMAIL"
@@ -65,13 +86,17 @@ gh variable set ADSENSE_CLIENT_ID --repo "$REPO" --body "$ADSENSE_ID"
 gh secret set GCP_SA_KEY --repo "$REPO" < "$TMP_KEY"
 rm -f "$TMP_KEY"
 
-echo "==> [4/5] Triggering 1-Click Deploy to Firebase & Cloud Run..."
+echo "==> [6/6] Triggering 1-Click Deploy to Firebase & Cloud Run..."
 gh workflow run "deploy-firebase-cloudrun.yml" \
   --repo "$REPO" \
   -f environment=staging \
   -f ads_enabled=false \
   -f run_full_factory=true
 
-echo "==> [5/5] Done! Watch your live deploy here:"
-echo "    https://github.com/${REPO}/actions/workflows/deploy-firebase-cloudrun.yml"
-echo "    Live URL (once finished): https://${PROJECT_ID}.web.app"
+echo ""
+echo "========================================================================="
+echo "  ALL DONE! Your new project '${PROJECT_ID}' is wired for 1-Click Deploy!"
+echo "  Watch live deploy : https://github.com/${REPO}/actions/workflows/deploy-firebase-cloudrun.yml"
+echo "  Live Web/PWA URL  : https://${PROJECT_ID}.web.app"
+echo "  Firebase Console  : https://console.firebase.google.com/project/${PROJECT_ID}"
+echo "========================================================================="

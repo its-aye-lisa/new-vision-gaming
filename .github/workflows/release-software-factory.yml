@@ -66,7 +66,7 @@ jobs:
           echo "source_sha256=${SRC_SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Upload Aegis SARIF 2.1.0 Report
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: dist/aegis-findings.sarif
           category: aegis-factory-sast-dast
@@ -149,13 +149,13 @@ jobs:
 
       - name: Upload Grype Image SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: ${{ steps.grype_img.outputs.sarif }}
           category: grype-container
 
       - name: Aqua Trivy — Dual-Scanner Container Image Scan (Fail on HIGH/CRITICAL)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: '${{ steps.meta.outputs.image_tag }}'
           format: 'sarif'
@@ -165,7 +165,7 @@ jobs:
 
       - name: Upload Trivy Image SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-image.sarif
           category: trivy-container
