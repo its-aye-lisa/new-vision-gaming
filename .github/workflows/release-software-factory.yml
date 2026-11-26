@@ -215,7 +215,7 @@ jobs:
           push-to-registry: true
 
       - name: Attach CycloneDX 1.5 SBOM Attestation (Free OIDC)
-        uses: actions/attest-sbom@v2
+        uses: actions/attest-sbom@v4
         with:
           subject-name: ${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.push.outputs.digest }}
