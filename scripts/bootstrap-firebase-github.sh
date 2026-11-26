@@ -10,6 +10,22 @@
 # =============================================================================
 set -euo pipefail
 
+if [ "${1:-}" = "--list" ]; then
+  echo "=== Google Cloud Projects ==="
+  gcloud projects list --format="table(projectId,name,lifecycleState)"
+  echo ""
+  echo "=== Firebase-Enabled Projects ==="
+  if command -v firebase >/dev/null 2>&1; then
+    firebase projects:list || true
+  else
+    npx -y firebase-tools@latest projects:list || true
+  fi
+  echo ""
+  echo "Pick ONE Project ID from above and run:"
+  echo "  ./scripts/bootstrap-firebase-github.sh <EXACT_PROJECT_ID>"
+  exit 0
+fi
+
 SUFFIX="$(python3 -c 'import secrets,string; print("".join(secrets.choice(string.ascii_lowercase+string.digits) for _ in range(5)))')"
 PROJECT_ID="${1:-new-vision-gaming-${SUFFIX}}"
 ADSENSE_ID="${2:-ca-pub-0000000000000000}"
@@ -22,6 +38,12 @@ if ! gcloud projects describe "$PROJECT_ID" >/dev/null 2>&1; then
   echo "    Project does not exist yet — creating brand-new Google Cloud project '${PROJECT_ID}'..."
   gcloud projects create "$PROJECT_ID" --name="New Vision Gaming"
   echo "    Created '${PROJECT_ID}'!"
+else
+  echo "    Found existing Google Cloud / Firebase project '${PROJECT_ID}' — unifying into this single project!"
+fi
+
+BILLING_ENABLED="$(gcloud billing projects describe "$PROJECT_ID" --format='value(billingEnabled)' 2>/dev/null || true)"
+if [ "$BILLING_ENABLED" != "True" ]; then
   echo "    Linking billing account (required for Cloud Run free tier)..."
   BILLING_ID="$(gcloud billing accounts list --filter='open=true' --format='value(name)' | head -n1 || true)"
   if [ -n "$BILLING_ID" ]; then
