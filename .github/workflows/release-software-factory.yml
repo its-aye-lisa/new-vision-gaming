@@ -71,7 +71,7 @@ jobs:
           category: aegis-factory-sast-dast
 
       - name: Upload Release Artifacts & Compliance Evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nvg-arcade-primary-release
           path: |
