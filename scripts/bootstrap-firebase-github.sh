@@ -5,12 +5,12 @@
 # Run inside Google Cloud Shell (or any terminal with gcloud + gh):
 #   ./scripts/bootstrap-firebase-github.sh [PROJECT_ID] [ADSENSE_CLIENT_ID]
 #
-# If PROJECT_ID is omitted, generates a unique ID like new-vision-gaming-4821
+# If PROJECT_ID is omitted, generates a unique ID like new-vision-gaming-k8x2m
 # and creates a brand-new Google Cloud + Firebase project automatically!
 # =============================================================================
 set -euo pipefail
 
-SUFFIX="$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 5 || echo "prod1")"
+SUFFIX="$(python3 -c 'import secrets,string; print("".join(secrets.choice(string.ascii_lowercase+string.digits) for _ in range(5)))')"
 PROJECT_ID="${1:-new-vision-gaming-${SUFFIX}}"
 ADSENSE_ID="${2:-ca-pub-0000000000000000}"
 REPO="${GITHUB_REPO:-its-aye-lisa/new-vision-gaming}"
@@ -72,6 +72,16 @@ for role in \
 done
 
 echo "==> [5/6] Uploading FIREBASE_PROJECT_ID & GCP_SA_KEY to GitHub (${REPO})..."
+if ! command -v gh >/dev/null 2>&1; then
+  echo "    GitHub CLI (gh) not found — installing into ~/.local/bin..."
+  mkdir -p "$HOME/.local/bin"
+  GH_VER="2.67.0"
+  curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VER}/gh_${GH_VER}_linux_amd64.tar.gz" \
+    | tar -xz -C /tmp
+  cp "/tmp/gh_${GH_VER}_linux_amd64/bin/gh" "$HOME/.local/bin/gh"
+  export PATH="$HOME/.local/bin:$PATH"
+fi
+
 if ! gh auth status >/dev/null 2>&1; then
   echo "    Logging into GitHub CLI once so we can wire GitHub Actions secrets..."
   gh auth login --web
