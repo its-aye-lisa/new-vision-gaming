@@ -24,8 +24,4 @@ USER 65532:65532
 EXPOSE 8080
 
 ENTRYPOINT ["/nvg-arcade"]
-CMD [ \
-  "--require-fips", \
-  "--bundle", "/etc/nvg/release-bundle.signed.json", \
-  "--trust-roots", "/etc/nvg/trust-roots.json" \
-]
+CMD ["--require-fips", "--bundle", "/etc/nvg/release-bundle.signed.json", "--trust-roots", "/etc/nvg/trust-roots.json"]
