@@ -86,6 +86,21 @@ func canonicalVectors() []specVector {
 			Input:    mexicantrain.SpecMoveInput{Turn: 0, OpenDoubleTrain: -2, OwnOpenEnd: 4, MexOpenEnd: 2, OppOpenEnd: 7, OppPublic: false, Action: "PLAY", TargetTrain: 0, TileLeft: 8, TileRight: 3, HandCount: 9, BoneyardCount: 20, DrawnThisTurn: false, Actor: "cheat-win"},
 			Expected: mexicantrain.SpecMoveResult{Valid: false, NewOpenEnd: 4, NextTurn: 0, NewOpenDouble: -2, OwnPublic: false, HandOver: false, Reason: "ERR_PIP_MISMATCH"},
 		},
+		{
+			ID: "MT-V13", Description: "Reject DRAW when player holds at least one legal move",
+			Input:    mexicantrain.SpecMoveInput{Turn: 0, OpenDoubleTrain: -2, OwnOpenEnd: 9, MexOpenEnd: 9, OppOpenEnd: 9, OppPublic: false, Action: "DRAW", TargetTrain: 0, TileLeft: -1, TileRight: -1, HandCount: 12, BoneyardCount: 30, DrawnThisTurn: false, HasLegalMove: true, Actor: "p0"},
+			Expected: mexicantrain.SpecMoveResult{Valid: false, NewOpenEnd: 9, NextTurn: 0, NewOpenDouble: -2, OwnPublic: false, HandOver: false, Reason: "ERR_LEGAL_MOVE_AVAILABLE"},
+		},
+		{
+			ID: "MT-V14", Description: "Reject PASS when player holds at least one legal move",
+			Input:    mexicantrain.SpecMoveInput{Turn: 0, OpenDoubleTrain: -2, OwnOpenEnd: 4, MexOpenEnd: 2, OppOpenEnd: 7, OppPublic: false, Action: "PASS", TargetTrain: 0, TileLeft: -1, TileRight: -1, HandCount: 10, BoneyardCount: 19, DrawnThisTurn: true, HasLegalMove: true, Actor: "p0"},
+			Expected: mexicantrain.SpecMoveResult{Valid: false, NewOpenEnd: 4, NextTurn: 0, NewOpenDouble: -2, OwnPublic: false, HandOver: false, Reason: "ERR_LEGAL_MOVE_AVAILABLE"},
+		},
+		{
+			ID: "MT-V15", Description: "Allow DRAW when player has no legal move and boneyard non-empty",
+			Input:    mexicantrain.SpecMoveInput{Turn: 0, OpenDoubleTrain: -2, OwnOpenEnd: 4, MexOpenEnd: 2, OppOpenEnd: 7, OppPublic: false, Action: "DRAW", TargetTrain: 0, TileLeft: -1, TileRight: -1, HandCount: 9, BoneyardCount: 20, DrawnThisTurn: false, HasLegalMove: false, Actor: "p0"},
+			Expected: mexicantrain.SpecMoveResult{Valid: true, NewOpenEnd: 4, NextTurn: 0, NewOpenDouble: -2, OwnPublic: false, HandOver: false, Reason: "TILE_DRAWN"},
+		},
 	}
 }
 
@@ -164,6 +179,10 @@ func TestCleanRoom3WayEquivalence(t *testing.T) {
 		if in.DrawnThisTurn {
 			drawn = "1"
 		}
+		hasLegal := "0"
+		if in.HasLegalMove {
+			hasLegal = "1"
+		}
 		actor := in.Actor
 		if actor == "" {
 			actor = "anon"
@@ -183,6 +202,7 @@ func TestCleanRoom3WayEquivalence(t *testing.T) {
 			strconv.Itoa(in.BoneyardCount),
 			drawn,
 			actor,
+			hasLegal,
 		).CombinedOutput()
 		if err != nil {
 			t.Fatalf("c verifier %s error: %v\n%s", bin, err, string(out))
@@ -222,6 +242,7 @@ func TestCleanRoom3WayEquivalence(t *testing.T) {
 			HandCount:       []int{0, 1, 2, 7, 12}[i%5],
 			BoneyardCount:   []int{0, 1, 15}[i%3],
 			DrawnThisTurn:   i%2 == 1,
+			HasLegalMove:    i%4 == 0,
 			Actor:           actors[i%len(actors)],
 		}
 		gotGo := formatSpecResult(mexicantrain.EvalSpecMove(in))
@@ -231,6 +252,42 @@ func TestCleanRoom3WayEquivalence(t *testing.T) {
 				t.Fatalf("DIFF-%03d: Go=%q != %s=%q (input=%+v)", i, gotGo, cc, gotC, in)
 			}
 		}
+	}
+}
+
+func TestStatefulCannotDrawOrPassWithLegalMove(t *testing.T) {
+	st := mexicantrain.NewMatch(9, 2, 42)
+	// Force deterministic hand where Player 0 holds a matching tile for engine 9
+	st.Hands[0] = []mexicantrain.Tile{{Left: 9, Right: 4}, {Left: 2, Right: 1}}
+	st.Boneyard = []mexicantrain.Tile{{Left: 3, Right: 5}}
+
+	resDraw := mexicantrain.ApplyAction(st, mexicantrain.ActionRequest{Player: 0, Action: "DRAW"})
+	if resDraw.Valid || resDraw.Reason != "ERR_LEGAL_MOVE_AVAILABLE" {
+		t.Fatalf("expected DRAW rejected with ERR_LEGAL_MOVE_AVAILABLE, got valid=%v reason=%s", resDraw.Valid, resDraw.Reason)
+	}
+	if len(resDraw.State.Boneyard) != 1 || len(resDraw.State.Hands[0]) != 2 {
+		t.Fatalf("failed DRAW mutated state: boneyard=%d hand=%d", len(resDraw.State.Boneyard), len(resDraw.State.Hands[0]))
+	}
+
+	// Even if DrawnThisTurn is true (e.g. just drew a playable tile), PASS must be rejected
+	stDrawnPlayable := mexicantrain.CloneState(st)
+	stDrawnPlayable.DrawnThisTurn = true
+	resPass := mexicantrain.ApplyAction(stDrawnPlayable, mexicantrain.ActionRequest{Player: 0, Action: "PASS"})
+	if resPass.Valid || resPass.Reason != "ERR_LEGAL_MOVE_AVAILABLE" {
+		t.Fatalf("expected PASS rejected with ERR_LEGAL_MOVE_AVAILABLE, got valid=%v reason=%s", resPass.Valid, resPass.Reason)
+	}
+
+	// Now give Player 0 zero legal plays (engine 9, hand has only [2|1])
+	stBlocked := mexicantrain.CloneState(st)
+	stBlocked.Hands[0] = []mexicantrain.Tile{{Left: 2, Right: 1}}
+	resDrawOK := mexicantrain.ApplyAction(stBlocked, mexicantrain.ActionRequest{Player: 0, Action: "DRAW"})
+	if !resDrawOK.Valid || resDrawOK.Reason != "TILE_DRAWN" {
+		t.Fatalf("expected DRAW allowed when blocked, got valid=%v reason=%s", resDrawOK.Valid, resDrawOK.Reason)
+	}
+	// Drawn tile [3|5] still does not match engine 9 -> PASS must succeed and open train
+	resPassOK := mexicantrain.ApplyAction(resDrawOK.State, mexicantrain.ActionRequest{Player: 0, Action: "PASS"})
+	if !resPassOK.Valid || resPassOK.Reason != "TURN_PASSED_TRAIN_OPENED" || !resPassOK.State.PlayerTrains[0].Public {
+		t.Fatalf("expected PASS allowed after unplayable draw, got valid=%v reason=%s public=%v", resPassOK.Valid, resPassOK.Reason, resPassOK.State.PlayerTrains[0].Public)
 	}
 }
 

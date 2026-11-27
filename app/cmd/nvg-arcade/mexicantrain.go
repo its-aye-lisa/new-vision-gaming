@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -139,8 +141,10 @@ type mtHandTileVM struct {
 type mtTrainVM struct {
 	ID          int
 	Title       string
+	DotClass    string
 	OpenEnd     int
 	Public      bool
+	Playable    bool
 	NeedsDouble bool
 	Tiles       []mexicantrain.Tile
 	TileCount   int
@@ -149,9 +153,12 @@ type mtTrainVM struct {
 type mtBoardVM struct {
 	RoomCode          string
 	Mode              string
+	IsSolo            bool
 	SharePath         string
+	ShareURL          string
 	MaxPip            int
 	Engine            int
+	NextEngine        int
 	HandNumber        int
 	TotalHands        int
 	ViewerSeat        int // 0, 1, or -1 (spectator)
@@ -253,7 +260,55 @@ func (rm *mtRoom) runBotTurnsIfNeeded() {
 	}
 }
 
-func buildMTBoardVM(rm *mtRoom, viewer int, notice string, webAds, isNative bool, adsClient string) mtBoardVM {
+func isSafeShareHost(hostport string) bool {
+	if hostport == "" || len(hostport) > 253 {
+		return false
+	}
+	host := hostport
+	if h, p, err := net.SplitHostPort(hostport); err == nil {
+		portNum, perr := strconv.Atoi(p)
+		if perr != nil || portNum < 1 || portNum > 65535 {
+			return false
+		}
+		host = h
+	}
+	if ip := net.ParseIP(host); ip != nil {
+		return true
+	}
+	if strings.HasPrefix(host, ".") || strings.HasSuffix(host, ".") || strings.Contains(host, "..") {
+		return false
+	}
+	for i := 0; i < len(host); i++ {
+		c := host[i]
+		isAlpha := (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+		isDigit := c >= '0' && c <= '9'
+		if !isAlpha && !isDigit && c != '.' && c != '-' {
+			return false
+		}
+	}
+	return len(host) > 0
+}
+
+func buildShareURL(r *http.Request, code string) string {
+	path := "/play/" + code
+	if base := strings.TrimRight(strings.TrimSpace(os.Getenv("PUBLIC_BASE_URL")), "/"); strings.HasPrefix(base, "https://") || strings.HasPrefix(base, "http://") {
+		return base + path
+	}
+	if r == nil {
+		return path
+	}
+	host := strings.TrimSpace(r.Host)
+	if !isSafeShareHost(host) {
+		return path
+	}
+	scheme := "http"
+	if r.TLS != nil || strings.EqualFold(strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")), "https") {
+		scheme = "https"
+	}
+	return scheme + "://" + host + path
+}
+
+func buildMTBoardVM(r *http.Request, rm *mtRoom, viewer int, notice string, webAds, isNative bool, adsClient string) mtBoardVM {
 	st := rm.State
 	mySeat := viewer
 	if mySeat < 0 {
@@ -263,9 +318,11 @@ func buildMTBoardVM(rm *mtRoom, viewer int, notice string, webAds, isNative bool
 
 	myName := fmt.Sprintf("Player %d (You)", mySeat+1)
 	oppName := fmt.Sprintf("Player %d", oppSeat+1)
+	oppTrainTitle := oppName + "'s Train"
 	if rm.Mode == "bot" {
 		myName = "You"
 		oppName = "NVG Bot"
+		oppTrainTitle = "Bot Train"
 	}
 
 	trainLabel := func(id int) string {
@@ -295,11 +352,16 @@ func buildMTBoardVM(rm *mtRoom, viewer int, notice string, webAds, isNative bool
 
 	// Build legal play options for viewer's own hidden hand ONLY (never exposes opponent hand!)
 	var handVM []mtHandTileVM
+	var legal []mexicantrain.LegalMove
+	playableTrains := make(map[int]bool)
 	if viewer >= 0 && viewer < len(st.Hands) {
-		legal := mexicantrain.LegalMoves(st)
+		if isMyTurn {
+			legal = mexicantrain.LegalMoves(st)
+		}
 		byTile := make(map[int][]mtPlayOptionVM)
 		if isMyTurn {
 			for _, m := range legal {
+				playableTrains[m.TargetTrain] = true
 				byTile[m.TileIndex] = append(byTile[m.TileIndex], mtPlayOptionVM{
 					TargetTrain: m.TargetTrain,
 					Label:       trainLabel(m.TargetTrain),
@@ -318,36 +380,42 @@ func buildMTBoardVM(rm *mtRoom, viewer int, notice string, webAds, isNative bool
 	}
 
 	tailTiles := func(tiles []mexicantrain.Tile) []mexicantrain.Tile {
-		if len(tiles) <= 6 {
-			return tiles
+		if len(tiles) > 6 {
+			tiles = tiles[len(tiles)-6:]
 		}
-		return tiles[len(tiles)-6:]
+		return append([]mexicantrain.Tile(nil), tiles...)
 	}
 
 	trains := []mtTrainVM{
 		{
 			ID:          mySeat,
-			Title:       myName + " Train",
+			Title:       "Your Train",
+			DotClass:    "bg-train-p1",
 			OpenEnd:     st.PlayerTrains[mySeat].OpenEnd,
 			Public:      st.PlayerTrains[mySeat].Public,
+			Playable:    playableTrains[mySeat],
 			NeedsDouble: st.OpenDoubleTrain == mySeat,
 			Tiles:       tailTiles(st.PlayerTrains[mySeat].Tiles),
 			TileCount:   len(st.PlayerTrains[mySeat].Tiles),
 		},
 		{
 			ID:          -1,
-			Title:       "Mexican Train (Always Public)",
+			Title:       "Mexican Train",
+			DotClass:    "bg-train-mexican",
 			OpenEnd:     st.MexicanTrain.OpenEnd,
 			Public:      true,
+			Playable:    playableTrains[-1],
 			NeedsDouble: st.OpenDoubleTrain == -1,
 			Tiles:       tailTiles(st.MexicanTrain.Tiles),
 			TileCount:   len(st.MexicanTrain.Tiles),
 		},
 		{
 			ID:          oppSeat,
-			Title:       oppName + " Train",
+			Title:       oppTrainTitle,
+			DotClass:    "bg-train-p2",
 			OpenEnd:     st.PlayerTrains[oppSeat].OpenEnd,
 			Public:      st.PlayerTrains[oppSeat].Public,
+			Playable:    playableTrains[oppSeat],
 			NeedsDouble: st.OpenDoubleTrain == oppSeat,
 			Tiles:       tailTiles(st.PlayerTrains[oppSeat].Tiles),
 			TileCount:   len(st.PlayerTrains[oppSeat].Tiles),
@@ -369,15 +437,25 @@ func buildMTBoardVM(rm *mtRoom, viewer int, notice string, webAds, isNative bool
 		}
 	}
 
-	canDraw := isMyTurn && !st.DrawnThisTurn && len(st.Boneyard) > 0
-	canPass := isMyTurn && (st.DrawnThisTurn || len(st.Boneyard) == 0)
+	// MT-INV-7: Draw and Pass are strictly disabled whenever the player holds at least one legal play.
+	hasLegal := isMyTurn && len(legal) > 0
+	canDraw := isMyTurn && !hasLegal && !st.DrawnThisTurn && len(st.Boneyard) > 0
+	canPass := isMyTurn && !hasLegal && (st.DrawnThisTurn || len(st.Boneyard) == 0)
+
+	nextEngine := st.Engine - 1
+	if nextEngine < 0 {
+		nextEngine = 0
+	}
 
 	return mtBoardVM{
 		RoomCode:          rm.Code,
 		Mode:              rm.Mode,
+		IsSolo:            rm.Mode == "bot",
 		SharePath:         "/play/" + rm.Code,
+		ShareURL:          buildShareURL(r, rm.Code),
 		MaxPip:            st.MaxPip,
 		Engine:            st.Engine,
+		NextEngine:        nextEngine,
 		HandNumber:        st.MaxPip - st.Engine + 1,
 		TotalHands:        st.MaxPip + 1,
 		ViewerSeat:        viewer,
@@ -416,19 +494,14 @@ func registerMexicanTrainRoutes(
 ) {
 	store := newMTStore()
 
-	renderPage := func(w http.ResponseWriter, r *http.Request, rm *mtRoom, viewer int, notice string) {
-		vm := newVM(r, "Mexican Train Dominoes", "mexican-train", ".........", "X", "IN_PROGRESS", "", notice)
-		if rm != nil {
-			bvm := buildMTBoardVM(rm, viewer, notice, vm.WebAdsEnabled, vm.IsNativeShell, vm.AdSenseClient)
-			vm.MT = &bvm
-		}
+	renderPageVM := func(w http.ResponseWriter, vm pageViewModel) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_ = tmpl.ExecuteTemplate(w, "layout.tmpl", vm)
 	}
 
 	renderBoardFragment := func(w http.ResponseWriter, r *http.Request, rm *mtRoom, viewer int, notice string) {
 		vm := newVM(r, "Mexican Train Dominoes", "mexican-train", ".........", "X", "IN_PROGRESS", "", notice)
-		bvm := buildMTBoardVM(rm, viewer, notice, vm.WebAdsEnabled, vm.IsNativeShell, vm.AdSenseClient)
+		bvm := buildMTBoardVM(r, rm, viewer, notice, vm.WebAdsEnabled, vm.IsNativeShell, vm.AdSenseClient)
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_ = tmpl.ExecuteTemplate(w, "mexicantrain_board.tmpl", bvm)
 	}
@@ -439,17 +512,18 @@ func registerMexicanTrainRoutes(
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "GET required"})
 			return
 		}
+		vm := newVM(r, "Mexican Train Dominoes", "mexican-train", ".........", "X", "IN_PROGRESS", "", "")
 		code := strings.TrimSpace(r.URL.Query().Get("room"))
 		if code != "" {
 			if rm := store.get(code); rm != nil {
 				store.mu.Lock()
 				viewer := rm.viewerSeatForRequest(r)
+				bvm := buildMTBoardVM(r, rm, viewer, "", vm.WebAdsEnabled, vm.IsNativeShell, vm.AdSenseClient)
 				store.mu.Unlock()
-				renderPage(w, r, rm, viewer, "")
-				return
+				vm.MT = &bvm
 			}
 		}
-		renderPage(w, r, nil, -1, "")
+		renderPageVM(w, vm)
 	})
 
 	// Canonical 2-Player 6-Letter Invite Deep Link: /play/MEX-XXXX
@@ -462,7 +536,8 @@ func registerMexicanTrainRoutes(
 		code = strings.Trim(code, "/")
 		rm := store.get(code)
 		if rm == nil {
-			renderPage(w, r, nil, -1, "Room "+code+" was not found or expired. Start a fresh room below!")
+			vm := newVM(r, "Mexican Train Dominoes", "mexican-train", ".........", "X", "IN_PROGRESS", "", "Room "+code+" was not found or expired. Start a fresh room below!")
+			renderPageVM(w, vm)
 			return
 		}
 		store.mu.Lock()
@@ -476,8 +551,11 @@ func registerMexicanTrainRoutes(
 			setSeatCookie(w, r, rm.Code, rm.SeatTokens[1])
 			notice = "Joined room " + rm.Code + " as Player 2!"
 		}
+		vm := newVM(r, "Mexican Train Dominoes", "mexican-train", ".........", "X", "IN_PROGRESS", "", notice)
+		bvm := buildMTBoardVM(r, rm, viewer, notice, vm.WebAdsEnabled, vm.IsNativeShell, vm.AdSenseClient)
 		store.mu.Unlock()
-		renderPage(w, r, rm, viewer, notice)
+		vm.MT = &bvm
+		renderPageVM(w, vm)
 	})
 
 	// Create New Match (Bot or 2-Player Room)
@@ -557,14 +635,31 @@ func registerMexicanTrainRoutes(
 				TargetTrain: targetTrain,
 				TileIndex:   tileIdx,
 			}
+			actorLabel := fmt.Sprintf("Player %d", viewer+1)
+			ownTrainLabel := fmt.Sprintf("Player %d's Train", viewer+1)
+			if rm.Mode == "bot" {
+				actorLabel = "You"
+				ownTrainLabel = "Your Train"
+			}
+			targetName := "Mexican Train"
+			if targetTrain == viewer {
+				targetName = ownTrainLabel
+			} else if targetTrain >= 0 {
+				if rm.Mode == "bot" {
+					targetName = "Bot Train"
+				} else {
+					targetName = fmt.Sprintf("Player %d's Train", targetTrain+1)
+				}
+			}
+
 			var desc string
 			if action == "PLAY" && tileIdx >= 0 && tileIdx < len(rm.State.Hands[viewer]) {
 				t := rm.State.Hands[viewer][tileIdx]
-				desc = fmt.Sprintf("P%d played [%d|%d]", viewer+1, t.Left, t.Right)
+				desc = fmt.Sprintf("%s played [%d|%d] on %s", actorLabel, t.Left, t.Right, targetName)
 			} else if action == "DRAW" {
-				desc = fmt.Sprintf("P%d drew from boneyard", viewer+1)
+				desc = fmt.Sprintf("%s drew from boneyard", actorLabel)
 			} else if action == "PASS" {
-				desc = fmt.Sprintf("P%d passed (train OPEN)", viewer+1)
+				desc = fmt.Sprintf("%s passed (%s is now OPEN)", actorLabel, ownTrainLabel)
 			}
 			res := mexicantrain.ApplyAction(rm.State, req)
 			vCopy := res.Valid

@@ -192,13 +192,9 @@ func main() {
 		shortDigest = shortDigest[:16]
 	}
 
-	tmpl, err := template.ParseFS(web.Assets, "templates/*.tmpl")
+	handler, err := newArcadeHandler(fipsActive, selfVerified, adsEnabled, adsClient, shortDigest, selfSHA)
 	if err != nil {
-		log.Fatalf("parse embedded html/templates: %v", err)
-	}
-	staticFS, err := fs.Sub(web.Assets, "static")
-	if err != nil {
-		log.Fatalf("mount embedded static assets: %v", err)
+		log.Fatal(err)
 	}
 
 	emitAuditLog(auditEvent{
@@ -207,6 +203,88 @@ func main() {
 		BinaryDigest: shortDigest,
 		Reason:       fmt.Sprintf("selfVerified=%v adsEnabled=%v", selfVerified, adsEnabled),
 	})
+
+	srv := &http.Server{
+		Addr:              *addr,
+		Handler:           handler,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+		<-sigCh
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = srv.Shutdown(ctx)
+	}()
+
+	log.Printf("New Vision Gaming Arcade listening on http://%s (fips140=%v selfVerified=%v adsEnabled=%v sha256=%s)",
+		*addr, fipsActive, selfVerified, adsEnabled, shortDigest)
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatal(err)
+	}
+}
+
+func newArcadeHandler(fipsActive, selfVerified, adsEnabled bool, adsClient, shortDigest, selfSHA string) (http.Handler, error) {
+	tmplFuncs := template.FuncMap{
+		"pipMask": func(val int) [9]bool {
+			switch val {
+			case 1:
+				return [9]bool{false, false, false, false, true, false, false, false, false}
+			case 2:
+				return [9]bool{true, false, false, false, false, false, false, false, true}
+			case 3:
+				return [9]bool{true, false, false, false, true, false, false, false, true}
+			case 4:
+				return [9]bool{true, false, true, false, false, false, true, false, true}
+			case 5:
+				return [9]bool{true, false, true, false, true, false, true, false, true}
+			case 6:
+				return [9]bool{true, false, true, true, false, true, true, false, true}
+			case 7:
+				return [9]bool{true, false, true, true, true, true, true, false, true}
+			case 8:
+				return [9]bool{true, true, true, true, false, true, true, true, true}
+			case 9:
+				return [9]bool{true, true, true, true, true, true, true, true, true}
+			default:
+				return [9]bool{}
+			}
+		},
+		"pipBgClass": func(val int) string {
+			if val < 0 || val > 12 {
+				return "bg-domino-pip-0"
+			}
+			return fmt.Sprintf("bg-domino-pip-%d", val)
+		},
+		"pipTextClass": func(val int) string {
+			if val < 0 || val > 12 {
+				return "text-domino-pip-0"
+			}
+			return fmt.Sprintf("text-domino-pip-%d", val)
+		},
+		"tileVM": func(left, right int, vertical bool, size string) map[string]any {
+			return map[string]any{
+				"Left":     left,
+				"Right":    right,
+				"Vertical": vertical,
+				"Size":     size,
+			}
+		},
+	}
+
+	tmpl, err := template.New("").Funcs(tmplFuncs).ParseFS(web.Assets, "templates/*.tmpl")
+	if err != nil {
+		return nil, fmt.Errorf("parse embedded html/templates: %w", err)
+	}
+	staticFS, err := fs.Sub(web.Assets, "static")
+	if err != nil {
+		return nil, fmt.Errorf("mount embedded static assets: %w", err)
+	}
 
 	newVM := func(r *http.Request, title, view, board, turn, status, winner, notice string) pageViewModel {
 		cells := make([]cellVM, 9)
@@ -299,8 +377,8 @@ func main() {
 			"scope":            "/",
 			"display":          "standalone",
 			"orientation":      "any",
-			"background_color": "#090f1c",
-			"theme_color":      "#090f1c",
+			"background_color": "#f1f2f4",
+			"theme_color":      "#f1f2f4",
 			"categories":       []string{"games", "board", "strategy"},
 			"icons": []map[string]any{
 				{"src": "/static/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"},
@@ -584,29 +662,7 @@ func main() {
 		writeJSON(w, http.StatusOK, buildA2UISurface(board, turn, "IN_PROGRESS", "", "READY"))
 	})
 
-	srv := &http.Server{
-		Addr:              *addr,
-		Handler:           securityHeadersMiddleware(mux, adsEnabled),
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      15 * time.Second,
-		IdleTimeout:       60 * time.Second,
-	}
-
-	go func() {
-		sigCh := make(chan os.Signal, 1)
-		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-		<-sigCh
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		_ = srv.Shutdown(ctx)
-	}()
-
-	log.Printf("New Vision Gaming Arcade listening on http://%s (fips140=%v selfVerified=%v adsEnabled=%v sha256=%s)",
-		*addr, fipsActive, selfVerified, adsEnabled, shortDigest)
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatal(err)
-	}
+	return securityHeadersMiddleware(mux, adsEnabled), nil
 }
 
 func buildA2AAgentCard(baseURL, binarySHA string, fipsActive, selfVerified bool) map[string]any {
