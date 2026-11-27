@@ -1,0 +1,29 @@
+{{define "domino_half.tmpl"}}
+<div class="flex-1 w-full h-full flex items-center justify-center">
+  {{if ge . 10}}
+    <span class="font-bold text-base md:text-lg leading-none font-mono {{pipTextClass .}}">{{.}}</span>
+  {{else if eq . 0}}
+    <div class="w-full h-full" aria-hidden="true"></div>
+  {{else}}
+    {{$val := .}}
+    <div class="grid grid-cols-3 grid-rows-3 place-items-center w-full h-full p-1 gap-0.5" aria-hidden="true">
+      {{range pipMask $val}}
+        {{if .}}<span class="w-1.5 h-1.5 rounded-full {{pipBgClass $val}}"></span>{{else}}<span></span>{{end}}
+      {{end}}
+    </div>
+  {{end}}
+</div>
+{{end}}
+
+{{define "domino_tile.tmpl"}}
+<div class="bg-domino-face rounded-tile border border-black/20 shadow-tile shrink-0 select-none flex {{if .Vertical}}flex-col {{if eq .Size "hand"}}w-10 h-20{{else}}w-8 h-16 md:w-10 md:h-20{{end}}{{else}}flex-row w-16 h-8 md:w-20 md:h-10{{end}}"
+     aria-label="Domino {{.Left}}-{{.Right}}">
+  {{template "domino_half.tmpl" .Left}}
+  {{if .Vertical}}
+    <span class="w-3/4 h-px bg-domino-divider/60 self-center shrink-0" aria-hidden="true"></span>
+  {{else}}
+    <span class="w-px h-3/4 bg-domino-divider/60 self-center shrink-0" aria-hidden="true"></span>
+  {{end}}
+  {{template "domino_half.tmpl" .Right}}
+</div>
+{{end}}

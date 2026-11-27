@@ -6,7 +6,7 @@
  * Usage:
  *   mexicantrain_kernel <turn> <openDoubleTrain> <ownOpenEnd> <mexOpenEnd> <oppOpenEnd> \
  *     <oppPublic:0|1> <action:PLAY|PASS|DRAW> <targetTrain> <tileLeft> <tileRight> \
- *     <handCount> <boneyardCount> <drawnThisTurn:0|1> <actor>
+ *     <handCount> <boneyardCount> <drawnThisTurn:0|1> <actor> [hasLegalMove:0|1]
  *
  * Output:
  *   <VALID|INVALID> <newOpenEnd> <nextTurn> <newOpenDouble> <ownPublic:0|1> <handOver:0|1> <reason>
@@ -17,7 +17,7 @@
 
 int main(int argc, char **argv) {
     if (argc < 15) {
-        fprintf(stderr, "usage: mexicantrain_kernel <14 args>\n");
+        fprintf(stderr, "usage: mexicantrain_kernel <14..15 args>\n");
         return 2;
     }
 
@@ -36,6 +36,7 @@ int main(int argc, char **argv) {
     int drawn = atoi(argv[13]) != 0 ? 1 : 0;
     /* argv[14] is actor — intentionally IGNORED per MT-INV-6 (anti-backdoor determinism) */
     (void)argv[14];
+    int has_legal_move = (argc >= 16 && atoi(argv[15]) != 0) ? 1 : 0;
 
     if (turn != 0 && turn != 1) {
         printf("INVALID %d %d %d 0 0 ERR_INVALID_TURN\n", own_open, turn, open_double);
@@ -44,6 +45,10 @@ int main(int argc, char **argv) {
     int opp = 1 - turn;
 
     if (strcmp(action, "PASS") == 0) {
+        if (has_legal_move) {
+            printf("INVALID %d %d %d 0 0 ERR_LEGAL_MOVE_AVAILABLE\n", own_open, turn, open_double);
+            return 0;
+        }
         if (boneyard > 0 && !drawn) {
             printf("INVALID %d %d %d 0 0 ERR_MUST_DRAW_FIRST\n", own_open, turn, open_double);
             return 0;
@@ -53,6 +58,10 @@ int main(int argc, char **argv) {
     }
 
     if (strcmp(action, "DRAW") == 0) {
+        if (has_legal_move) {
+            printf("INVALID %d %d %d 0 0 ERR_LEGAL_MOVE_AVAILABLE\n", own_open, turn, open_double);
+            return 0;
+        }
         if (drawn) {
             printf("INVALID %d %d %d 0 0 ERR_ALREADY_DRAWN\n", own_open, turn, open_double);
             return 0;

@@ -1,35 +1,64 @@
 @import "tailwindcss";
 @source "../templates/*.tmpl";
+@source inline("bg-domino-pip-{0,1,2,3,4,5,6,7,8,9} text-domino-pip-{0,1,2,3,4,5,6,7,8,9,10,11,12} bg-train-{p1,p2,p3,p4,mexican}");
 
 /*
- * Generated from spec/design-tokens.json (W3C DTCG Token-Based Design System).
+ * Generated from spec/design-tokens.json v2.0.0 (New Vision Gaming Tabletop Design System).
  * Zero runtime CDN dependencies; compiled into app/web/static/tailwind.css
  * and embedded into the static Go binary via //go:embed.
  */
 @theme {
-  --color-surface-canvas: #090f1c;
-  --color-surface-card: #111a2e;
-  --color-surface-cell: #0d1526;
-  --color-surface-cell-hover: #172542;
+  --color-surface-canvas: #f1f2f4;
+  --color-surface-card: #ffffff;
+  --color-surface-cell: #e9eef3;
+  --color-surface-cell-hover: #fdf4e3;
 
-  --color-border-subtle: #243452;
-  --color-border-focus: #38bdf8;
+  --color-border-subtle: #c2ccd6;
+  --color-border-focus: #e99225;
 
-  --color-ink-primary: #e8eef8;
-  --color-ink-muted: #8ea2c3;
-  --color-ink-inverse: #071324;
+  --color-ink-primary: #2e3138;
+  --color-ink-muted: #52677d;
+  --color-ink-inverse: #fefcf5;
+  --color-ink-on-accent: #1f1607;
 
-  --color-accent-primary: #38bdf8;
-  --color-player-x: #38bdf8;
-  --color-player-o: #f59e0b;
+  --color-accent-primary: #e99225;
+  --color-accent-gold-soft: #e6c24d;
+  --color-player-x: #0284c7;
+  --color-player-o: #d97706;
 
-  --color-status-verified: #22c55e;
-  --color-status-warning: #f59e0b;
-  --color-status-danger: #ef4444;
+  --color-status-verified: #15803d;
+  --color-status-warning: #b45309;
+  --color-status-danger: #dc2626;
 
-  --radius-card: 1rem;
-  --radius-cell: 0.75rem;
+  --color-train-p1: #249ed6;
+  --color-train-p2: #26bf88;
+  --color-train-p3: #e61445;
+  --color-train-p4: #e7b008;
+  --color-train-mexican: #5c6670;
+
+  --color-domino-face: #ffffff;
+  --color-domino-divider: #94a3b8;
+  --color-domino-pip-0: #9ca3af;
+  --color-domino-pip-1: #06b6d4;
+  --color-domino-pip-2: #84cc16;
+  --color-domino-pip-3: #ef4444;
+  --color-domino-pip-4: #22c55e;
+  --color-domino-pip-5: #3b82f6;
+  --color-domino-pip-6: #eab308;
+  --color-domino-pip-7: #f472b6;
+  --color-domino-pip-8: #14b8a6;
+  --color-domino-pip-9: #a855f7;
+  --color-domino-pip-10: #f97316;
+  --color-domino-pip-11: #000000;
+  --color-domino-pip-12: #6b7280;
+
+  --radius-card: 0.75rem;
+  --radius-cell: 0.5rem;
   --radius-control: 0.5rem;
+  --radius-tile: 0.375rem;
+
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-tile: 0 4px 6px -1px rgb(0 0 0 / 0.14), 0 2px 4px -2px rgb(0 0 0 / 0.10);
 
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;

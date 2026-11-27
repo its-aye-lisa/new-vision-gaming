@@ -101,6 +101,7 @@ type SpecMoveInput struct {
 	HandCount       int    `json:"handCount"`
 	BoneyardCount   int    `json:"boneyardCount"`
 	DrawnThisTurn   bool   `json:"drawnThisTurn"`
+	HasLegalMove    bool   `json:"hasLegalMove,omitempty"`
 	Actor           string `json:"actor"`
 }
 
@@ -126,6 +127,9 @@ func EvalSpecMove(in SpecMoveInput) SpecMoveResult {
 	opp := 1 - in.Turn
 
 	if in.Action == "PASS" {
+		if in.HasLegalMove {
+			return SpecMoveResult{Valid: false, NewOpenEnd: in.OwnOpenEnd, NextTurn: in.Turn, NewOpenDouble: in.OpenDoubleTrain, Reason: "ERR_LEGAL_MOVE_AVAILABLE"}
+		}
 		if in.BoneyardCount > 0 && !in.DrawnThisTurn {
 			return SpecMoveResult{Valid: false, NewOpenEnd: in.OwnOpenEnd, NextTurn: in.Turn, NewOpenDouble: in.OpenDoubleTrain, Reason: "ERR_MUST_DRAW_FIRST"}
 		}
@@ -133,6 +137,9 @@ func EvalSpecMove(in SpecMoveInput) SpecMoveResult {
 	}
 
 	if in.Action == "DRAW" {
+		if in.HasLegalMove {
+			return SpecMoveResult{Valid: false, NewOpenEnd: in.OwnOpenEnd, NextTurn: in.Turn, NewOpenDouble: in.OpenDoubleTrain, Reason: "ERR_LEGAL_MOVE_AVAILABLE"}
+		}
 		if in.DrawnThisTurn {
 			return SpecMoveResult{Valid: false, NewOpenEnd: in.OwnOpenEnd, NextTurn: in.Turn, NewOpenDouble: in.OpenDoubleTrain, Reason: "ERR_ALREADY_DRAWN"}
 		}
@@ -448,6 +455,9 @@ func ApplyAction(orig State, req ActionRequest) ActionResult {
 
 	switch req.Action {
 	case "DRAW":
+		if len(LegalMoves(s)) > 0 {
+			return ActionResult{Valid: false, Reason: "ERR_LEGAL_MOVE_AVAILABLE", State: orig}
+		}
 		if s.DrawnThisTurn {
 			return ActionResult{Valid: false, Reason: "ERR_ALREADY_DRAWN", State: orig}
 		}
@@ -463,6 +473,9 @@ func ApplyAction(orig State, req ActionRequest) ActionResult {
 		return ActionResult{Valid: true, Reason: "TILE_DRAWN", State: s}
 
 	case "PASS":
+		if len(LegalMoves(s)) > 0 {
+			return ActionResult{Valid: false, Reason: "ERR_LEGAL_MOVE_AVAILABLE", State: orig}
+		}
 		if len(s.Boneyard) > 0 && !s.DrawnThisTurn {
 			return ActionResult{Valid: false, Reason: "ERR_MUST_DRAW_FIRST", State: orig}
 		}

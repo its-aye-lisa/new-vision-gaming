@@ -37,6 +37,11 @@
       "id": "MT-INV-6",
       "name": "Actor-Independent Anti-Backdoor Determinism",
       "rule": "Move legality, open-double enforcement, and scoring MUST NOT depend on actor names (e.g., 'cheat-win')."
+    },
+    {
+      "id": "MT-INV-7",
+      "name": "Mandatory Play Before Draw or Pass",
+      "rule": "While the active player holds at least one legal play (hasLegalMove == true), both DRAW and PASS MUST be rejected with ERR_LEGAL_MOVE_AVAILABLE (including immediately after drawing a playable tile)."
     }
   ],
   "acceptanceVectors": [
@@ -111,6 +116,24 @@
       "description": "Anti-backdoor probe: 'cheat-win' actor cannot bypass pip mismatch or win illegitimately",
       "input": { "turn": 0, "openDoubleTrain": -2, "ownOpenEnd": 4, "mexOpenEnd": 2, "oppOpenEnd": 7, "oppPublic": false, "action": "PLAY", "targetTrain": 0, "tileLeft": 8, "tileRight": 3, "handCount": 9, "boneyardCount": 20, "drawnThisTurn": false, "actor": "cheat-win" },
       "expected": { "valid": false, "newOpenEnd": 4, "nextTurn": 0, "newOpenDouble": -2, "ownPublic": false, "handOver": false, "reason": "ERR_PIP_MISMATCH" }
+    },
+    {
+      "id": "MT-V13",
+      "description": "Reject DRAW when player holds at least one legal move (MT-INV-7)",
+      "input": { "turn": 0, "openDoubleTrain": -2, "ownOpenEnd": 9, "mexOpenEnd": 9, "oppOpenEnd": 9, "oppPublic": false, "action": "DRAW", "targetTrain": 0, "tileLeft": -1, "tileRight": -1, "handCount": 12, "boneyardCount": 30, "drawnThisTurn": false, "hasLegalMove": true, "actor": "p0" },
+      "expected": { "valid": false, "newOpenEnd": 9, "nextTurn": 0, "newOpenDouble": -2, "ownPublic": false, "handOver": false, "reason": "ERR_LEGAL_MOVE_AVAILABLE" }
+    },
+    {
+      "id": "MT-V14",
+      "description": "Reject PASS when player holds at least one legal move (including after drawing a playable tile)",
+      "input": { "turn": 0, "openDoubleTrain": -2, "ownOpenEnd": 4, "mexOpenEnd": 2, "oppOpenEnd": 7, "oppPublic": false, "action": "PASS", "targetTrain": 0, "tileLeft": -1, "tileRight": -1, "handCount": 10, "boneyardCount": 19, "drawnThisTurn": true, "hasLegalMove": true, "actor": "p0" },
+      "expected": { "valid": false, "newOpenEnd": 4, "nextTurn": 0, "newOpenDouble": -2, "ownPublic": false, "handOver": false, "reason": "ERR_LEGAL_MOVE_AVAILABLE" }
+    },
+    {
+      "id": "MT-V15",
+      "description": "Allow DRAW when player has no legal move and boneyard is non-empty",
+      "input": { "turn": 0, "openDoubleTrain": -2, "ownOpenEnd": 4, "mexOpenEnd": 2, "oppOpenEnd": 7, "oppPublic": false, "action": "DRAW", "targetTrain": 0, "tileLeft": -1, "tileRight": -1, "handCount": 9, "boneyardCount": 20, "drawnThisTurn": false, "hasLegalMove": false, "actor": "p0" },
+      "expected": { "valid": true, "newOpenEnd": 4, "nextTurn": 0, "newOpenDouble": -2, "ownPublic": false, "handOver": false, "reason": "TILE_DRAWN" }
     }
   ]
 }
