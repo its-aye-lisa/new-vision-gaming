@@ -16,7 +16,7 @@ Verified by sibling [`../verifiable-software-factory`](../verifiable-software-fa
 | `app/cmd/nvg-arcade/` | Cloud Run Runtime | `$PORT` server, FIPS 140-3, SI-7 self-attestation, `ADS_ENABLED` CSPRNG CSP nonce, `/ads.txt`, `/privacy`, A2A/A2UI. |
 | `cleanroom/c-verifier/` | **Independent IV&V** | Independent ANSI C kernels compiled with both `gcc` and `clang` for 3-way equivalence against Go. |
 | `firebase/` & `infra/` | Everything-as-Code | Firebase Hosting rewrites, fail-closed `firestore.rules`, scratch `Dockerfile`, K8s/Kyverno/Terraform IaC. |
-| `.agents/` | **Antigravity 2.0 Control Plane** | `rules/` (glob/always_on), `skills/` (`/dev-cycle`, `/new-game-spec`, `/firebase-ads-audit`, `/compliance-gate`), `agents/` (custom subagents), `hooks.json` (deterministic `PreToolUse` + `Stop` fast-check gate), `mcp_config.json` (lazy MCP). |
+| `.agents/` | **Antigravity 2.0 Control Plane** | `rules/` (glob/always_on, incl. `40-bounded-sessions.md`), `skills/` (`/bounded-session`, `/dev-cycle`, `/new-game-spec`, `/firebase-ads-audit`, `/compliance-gate`), `agents/` (custom subagents), `hooks.json` (deterministic `PreToolUse` + `Stop` fast-check gate), `mcp_config.json` (lazy MCP). |
 
 ---
 
@@ -27,6 +27,8 @@ Verified by sibling [`../verifiable-software-factory`](../verifiable-software-fa
   - `game-kernel-builder` (`inherit`, `sandbox`) -> builds `app/**` pure Go kernels & GoTH views.
   - `cleanroom-ivv-auditor` (`pro`, `sandbox`, read-only) -> independent Clean-Room C/GCC/Clang & FedRAMP/IL4 auditor.
   - `ad-cwv-auditor` (`flash`, `sandbox`) -> zero-CLS ad slots, CSP nonce, `/ads.txt`, Core Web Vitals & Firestore rules audit.
+- **Bounded Sessions (`.agents/rules/40-bounded-sessions.md` & `/bounded-session`):**
+  - Separate **Explore** (read-only), **Execute** (bounded edits + tests), and **Clean-Eyes Review** (fresh diff-only audit) sessions; gate commits to `.session/daily-plan.md` by verified facts only; stop & reset on the 2-strike circuit breaker.
 - **Built-In Antigravity 2.0 Orchestrators:**
   - Use `/grill-me` before authoring a new game spec (`spec/mexican-train.spec.json`) to resolve house-rule & multiplayer decisions.
   - Use `/plan` for multi-file feature plans; `/swarm` for parallel independent tracks (Go kernel + C verifier + `.tmpl` UI); `/boost` for tricky formal invariants; `/teamwork` for full multi-milestone game launches; `/compact` after heavy research.

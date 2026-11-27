@@ -12,3 +12,8 @@ firebase-debug.log*
 firestore-debug.log*
 .DS_Store
 .agents/workflows/*.bak
+
+# Local bounded-session state & structured logs
+.handoff/
+.session/
+output_logs/
